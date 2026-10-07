@@ -77,10 +77,12 @@ body {
   color: #4a69bd;
   font-weight: 600;
   text-align: center;
-  padding: 12px;
+  padding: 14px 20px;
   background: #eef2ff;
   border-radius: 8px;
   margin: 12px 0;
+  line-height: 1.6;
+  font-size: 15px;
 }
 
 .term-box {
