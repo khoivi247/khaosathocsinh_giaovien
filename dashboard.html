@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Phân tích khảo sát NCKH</title>
+  <link rel="stylesheet" href="dashboard.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="dash-container">
+
+  <!-- HEADER -->
+  <div class="dash-header">
+    <h1>📊 DASHBOARD PHÂN TÍCH KHẢO SÁT</h1>
+    <p>Dự án: Sử dụng Chatbot Question Focus 24/7 nhằm thay đổi hành vi học tập của học sinh</p>
+    <a href="index.html" class="btn-home">← Về trang khảo sát</a>
+  </div>
+
+  <!-- TỔNG QUAN -->
+  <div class="stats-overview" id="overview">
+    <div class="stat-card">
+      <div class="stat-icon">🎓</div>
+      <div class="stat-value" id="totalStudent">—</div>
+      <div class="stat-label">Học sinh đã trả lời</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">👩‍🏫</div>
+      <div class="stat-value" id="totalTeacher">—</div>
+      <div class="stat-label">Giáo viên đã trả lời</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📝</div>
+      <div class="stat-value" id="totalAll">—</div>
+      <div class="stat-label">Tổng lượt khảo sát</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🕒</div>
+      <div class="stat-value" id="lastUpdate">—</div>
+      <div class="stat-label">Cập nhật lần cuối</div>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading" class="loading-box">⏳ Đang tải dữ liệu...</div>
+
+  <!-- TABS -->
+  <div class="tabs" id="tabs" style="display:none;">
+    <button class="tab-btn active" data-tab="student">🎓 Học sinh</button>
+    <button class="tab-btn" data-tab="teacher">👩‍🏫 Giáo viên</button>
+    <button class="tab-btn" data-tab="open">💬 Ý kiến mở (GV)</button>
+  </div>
+
+  <!-- TAB HỌC SINH -->
+  <div id="tab-student" class="tab-content active">
+    <h2 class="section-heading">Phần 1: Biểu hiện sự ỷ lại (Câu 1–3)</h2>
+    <div class="chart-grid">
+      <div class="chart-card"><canvas id="chart-s1"></canvas></div>
+      <div class="chart-card"><canvas id="chart-s2"></canvas></div>
+      <div class="chart-card"><canvas id="chart-s3"></canvas></div>
+    </div>
+
+    <h2 class="section-heading">Phần 2: Biểu hiện học tập chủ động (Câu 4–6)</h2>
+    <div class="chart-grid">
+      <div class="chart-card"><canvas id="chart-s4"></canvas></div>
+      <div class="chart-card"><canvas id="chart-s5"></canvas></div>
+      <div class="chart-card"><canvas id="chart-s6"></canvas></div>
+    </div>
+
+    <h2 class="section-heading">📈 Điểm trung bình 6 câu hỏi (thang 1–5)</h2>
+    <div class="chart-card full"><canvas id="chart-student-avg"></canvas></div>
+  </div>
+
+  <!-- TAB GIÁO VIÊN -->
+  <div id="tab-teacher" class="tab-content">
+    <h2 class="section-heading">Phần 1: Thực trạng hành vi học tập (Câu 1–4)</h2>
+    <div class="chart-grid">
+      <div class="chart-card"><canvas id="chart-t1"></canvas></div>
+      <div class="chart-card"><canvas id="chart-t2"></canvas></div>
+      <div class="chart-card"><canvas id="chart-t3"></canvas></div>
+      <div class="chart-card"><canvas id="chart-t4"></canvas></div>
+    </div>
+
+    <h2 class="section-heading">Phần 2: Yếu tố ảnh hưởng (Câu 5–8)</h2>
+    <div class="chart-grid">
+      <div class="chart-card"><canvas id="chart-t5"></canvas></div>
+      <div class="chart-card"><canvas id="chart-t6"></canvas></div>
+      <div class="chart-card"><canvas id="chart-t7"></canvas></div>
+      <div class="chart-card"><canvas id="chart-t8"></canvas></div>
+    </div>
+
+    <h2 class="section-heading">Phần 3: Tiềm năng giải pháp (Câu 9–12)</h2>
+    <div class="chart-grid">
+      <div class="chart-card"><canvas id="chart-t9"></canvas></div>
+      <div class="chart-card"><canvas id="chart-t10"></canvas></div>
+      <div class="chart-card"><canvas id="chart-t11"></canvas></div>
+      <div class="chart-card"><canvas id="chart-t12"></canvas></div>
+    </div>
+
+    <h2 class="section-heading">📈 Điểm trung bình 12 câu hỏi (thang 1–5)</h2>
+    <div class="chart-card full"><canvas id="chart-teacher-avg"></canvas></div>
+  </div>
+
+  <!-- TAB Ý KIẾN MỞ -->
+  <div id="tab-open" class="tab-content">
+    <h2 class="section-heading">💬 Đề xuất từ giáo viên</h2>
+    <div id="openAnswersList" class="open-list">
+      <p class="empty">Đang tải...</p>
+    </div>
+  </div>
+
+  <div class="dash-footer">
+    <p>© Nhóm nghiên cứu PTDTNT THCS&THPT Văn Quan — Lạng Sơn</p>
+  </div>
+
+</div>
+
+<script src="dashboard.js"></script>
+</body>
+</html>
