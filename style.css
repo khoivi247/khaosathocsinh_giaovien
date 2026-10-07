@@ -364,6 +364,34 @@ textarea:focus { outline: none; border-color: #4a69bd; }
   transition: width 0.3s;
 }
 
+/* ===== NÚT TRẢI NGHIỆM CHATBOT ===== */
+.btn-chatbot {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 12px;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.3s;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+}
+.btn-chatbot:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(243, 156, 18, 0.5);
+  background: linear-gradient(135deg, #e67e22, #d35400);
+}
+.btn-chatbot:active {
+  transform: translateY(0);
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 600px) {
   .header h1 { font-size: 18px; }
