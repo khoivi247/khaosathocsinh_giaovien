@@ -1,5 +1,5 @@
 // ====== CẤU HÌNH API ======
-const API_URL = 'https://script.google.com/macros/s/AKfycbxcYBm_aP8xn9qGP_2ESS2MRYrfQFedjaWVylnN_YnVtIsIOEydYTTo1qJ-Gn-rIQBz-A/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwsx3ju32uCxQ_HNx_Qp7PpkmMjU-krtOcUYkyvmWWtwluzg7ReMYvKJolpt32iDpPpYA/exec';
 
 // Biến lưu vai trò hiện tại
 let currentRole = null;
@@ -15,6 +15,10 @@ function selectRole(role) {
   currentRole = role;
   document.getElementById('rolePage').style.display = 'none';
   document.getElementById('infoPage').style.display = 'block';
+  const classGroup = document.getElementById('classGroup');
+  const className = document.getElementById('className');
+  classGroup.hidden = role !== 'student';
+  className.required = role === 'student';
 
   // Đổi tiêu đề theo vai trò
   const title = role === 'student'
@@ -41,17 +45,27 @@ function backToRole() {
 // ====== VALIDATE FORM THÔNG TIN ======
 function clearErrors() {
   document.getElementById('fullName').classList.remove('error');
-  document.getElementById('phone').classList.remove('error');
+  document.getElementById('school').classList.remove('error');
+  document.getElementById('className').classList.remove('error');
   document.getElementById('errName').classList.remove('show');
-  document.getElementById('errPhone').classList.remove('show');
+  document.getElementById('errSchool').classList.remove('show');
+  document.getElementById('errClass').classList.remove('show');
 }
 
 function validateInfo() {
   clearErrors();
   let ok = true;
 
+  const school = document.getElementById('school').value;
   const name = document.getElementById('fullName').value.trim();
-  const phone = document.getElementById('phone').value.trim();
+
+  if (!school) {
+    document.getElementById('school').classList.add('error');
+    const errSchool = document.getElementById('errSchool');
+    errSchool.textContent = 'Vui lòng chọn trường.';
+    errSchool.classList.add('show');
+    ok = false;
+  }
 
   if (name.length < 2) {
     document.getElementById('fullName').classList.add('error');
@@ -61,12 +75,12 @@ function validateInfo() {
     ok = false;
   }
 
-  const phoneRegex = /^0\d{9}$/;
-  if (!phoneRegex.test(phone)) {
-    document.getElementById('phone').classList.add('error');
-    const errPhone = document.getElementById('errPhone');
-    errPhone.textContent = 'SĐT không hợp lệ. Vui lòng nhập 10 số, bắt đầu bằng 0.';
-    errPhone.classList.add('show');
+  const className = document.getElementById('className').value.trim();
+  if (currentRole === 'student' && !className) {
+    document.getElementById('className').classList.add('error');
+    const errClass = document.getElementById('errClass');
+    errClass.textContent = 'Vui lòng nhập lớp.';
+    errClass.classList.add('show');
     ok = false;
   }
 
@@ -147,7 +161,10 @@ function submitSurvey(role) {
   }
 
   const fullName = document.getElementById('fullName').value.trim();
-  const phone = document.getElementById('phone').value.trim();
+  const school = document.getElementById('school').value;
+  const className = role === 'student'
+    ? document.getElementById('className').value.trim()
+    : '';
 
   const btn = document.getElementById(role === 'student' ? 'btnStudent' : 'btnTeacher');
   btn.disabled = true;
@@ -155,8 +172,9 @@ function submitSurvey(role) {
 
   const formData = new URLSearchParams();
   formData.append('role', role);
+  formData.append('school', school);
   formData.append('fullName', fullName);
-  formData.append('phone', phone);
+  formData.append('className', className);
   formData.append('answers', JSON.stringify(answers));
 
   fetch(API_URL, {
