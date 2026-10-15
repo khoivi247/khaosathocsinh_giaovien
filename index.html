@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Khảo sát sử dụng CHATBOT QUESTIONS 24/7 </title>
+  <title>Nghiên cứu khoa học - Chatbot Question Focus 24/7</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -23,8 +23,8 @@
     <!-- Banner đầu trang -->
     <div class="banner-wrap">
       <img
-        src="https://i.postimg.cc/m2ZDW7K5/2a-Obo-R3p6quzx-IRs-Ccyb-DWBsh-ILXHJg-KVd-HLE43s.jpg"
-        alt="KHẢO SÁT SỬ DỤNG CHATBOT QUESTIONS FOCUS 24/7"
+        src="https://i.postimg.cc/rwRS1GhH/1WUpukpn-Ppw-Pcs-Oghz-UKbg-POW6r-C6YMOHMPYw-WGIz-OTi-Ok-Wk-XO0t-Xxw-MCmdd3PDr-FNR.jpg"
+        alt="Banner dự án NCKH - Chatbot Question Focus 24/7"
         class="banner-img"
         onerror="this.parentElement.style.display='none'"
       >
@@ -63,7 +63,7 @@
         <li>Tiềm năng và hiệu quả dự kiến của mô hình "Chatbot Question Focus 24/7" trong việc cải thiện tư duy phản biện và năng lực tự học của học sinh.</li>
       </ul>
 
-      <p>Các bạn học sinh và các quý Thầy/Cô chỉ cần dành ra khoảng <strong>2 phút</strong> để làm khảo sát. Toàn bộ thông tin do quý Thầy/Cô và các bạn cung cấp sẽ được <strong>giữ bí mật hoàn toàn</strong> và chỉ sử dụng duy nhất cho mục đích nghiên cứu khoa học. Sự đánh giá khách quan, trung thực của mọi người chính là đóng góp vô cùng quý báu cho dự án của chúng em.</p>
+      <p>Các bạn học sinh và các quý Thầy/Cô chỉ cần dành ra khoảng <strong>10 phút</strong> để làm khảo sát. Toàn bộ thông tin do quý Thầy/Cô và các bạn cung cấp sẽ được <strong>giữ bí mật hoàn toàn</strong> và chỉ sử dụng duy nhất cho mục đích nghiên cứu khoa học. Sự đánh giá khách quan, trung thực của mọi người chính là đóng góp vô cùng quý báu cho dự án của chúng em.</p>
 
       <p class="gift-note">
         🎁 Sau khi hoàn thành khảo sát, chúng em xin gửi đến mọi người một phần quà như một lời cảm ơn chân thành từ nhóm nghiên cứu!
@@ -74,7 +74,7 @@
       <div class="contact">
         Mọi thông tin chi tiết xin vui lòng liên hệ:<br>
         <strong>Nhóm tác giả:</strong><br>
-        🙋‍♀️ Dev: Linh Khôi Vĩ – Email: khoiv245@gmail.com – SĐT: 0347452753<br>
+        Dev: Linh Khôi Vĩ – Email: khoiv245@gmail.com – SĐT: 0347452753<br>
         🙋‍♀️ Thành viên: Sầm Thị Phương Anh – Email: phanhp1109@gmail.com – SĐT: 0979218301<br>
         <strong>Giáo viên hướng dẫn:</strong><br>
         👩‍🏫 Ngô Thị Niệm – Email: ngothiniem.30071991@gmail.com – SĐT: 0972859935
@@ -100,7 +100,7 @@
       <button class="role-btn" onclick="selectRole('student')">
         <span class="icon">🎓</span>
         Học sinh
-        <small>Dành cho học sinh trường PTDTNT THCS&THPT Văn Quan</small>
+        <small>Dành cho học sinh THPT Lương Văn Tri và THPT Cao Lộc</small>
       </button>
       <button class="role-btn" onclick="selectRole('teacher')">
         <span class="icon">👩‍🏫</span>
@@ -114,19 +114,29 @@
   <div id="infoPage" class="info-section" style="display:none;">
     <button class="btn-back" onclick="backToRole()">← Quay lại</button>
     <h2 id="infoTitle">📝 Thông tin người tham gia</h2>
-    <p class="info-hint">Vui lòng điền thông tin để nhóm nghiên cứu liên hệ (nếu cần)</p>
+    <p class="info-hint">Vui lòng cung cấp thông tin để phục vụ khảo sát.</p>
 
     <form id="infoForm" onsubmit="submitInfo(event)">
       <div class="form-group">
-        <label for="fullName">Họ và tên <span class="required">*</span></label>
-        <input type="text" id="fullName" placeholder="Ví dụ: Nguyễn Văn A" required maxlength="60">
-        <div class="error-msg" id="errName"></div>
+        <label for="school">Trường <span class="required">*</span></label>
+        <select id="school" name="school" required>
+          <option value="">-- Chọn trường --</option>
+          <option value="THPT Lương Văn Tri">THPT Lương Văn Tri</option>
+          <option value="THPT Cao Lộc">THPT Cao Lộc</option>
+        </select>
+        <div class="error-msg" id="errSchool"></div>
       </div>
 
       <div class="form-group">
-        <label for="phone">Số điện thoại <span class="required">*</span></label>
-        <input type="tel" id="phone" placeholder="Ví dụ: 0987654321" required maxlength="15">
-        <div class="error-msg" id="errPhone"></div>
+        <label for="fullName">Họ và tên <span class="required">*</span></label>
+        <input type="text" id="fullName" name="fullName" placeholder="Ví dụ: Nguyễn Văn A" required maxlength="60">
+        <div class="error-msg" id="errName"></div>
+      </div>
+
+      <div class="form-group" id="classGroup" hidden>
+        <label for="className">Lớp <span class="required">*</span></label>
+        <input type="text" id="className" name="className" placeholder="Ví dụ: 10A1" maxlength="20">
+        <div class="error-msg" id="errClass"></div>
       </div>
 
       <button type="submit" class="btn-submit">Tiếp tục →</button>
