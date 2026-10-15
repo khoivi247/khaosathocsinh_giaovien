@@ -77,12 +77,10 @@ body {
   color: #4a69bd;
   font-weight: 600;
   text-align: center;
-  padding: 14px 20px;
+  padding: 12px;
   background: #eef2ff;
   border-radius: 8px;
   margin: 12px 0;
-  line-height: 1.6;
-  font-size: 15px;
 }
 
 .term-box {
@@ -182,7 +180,8 @@ body {
   color: #e74c3c;
   margin-left: 4px;
 }
-.form-group input {
+.form-group input,
+.form-group select {
   width: 100%;
   padding: 12px 16px;
   border: 2px solid #dfe6ff;
@@ -192,12 +191,14 @@ body {
   transition: border-color 0.2s;
   background: #fff;
 }
-.form-group input:focus {
+.form-group input:focus,
+.form-group select:focus {
   outline: none;
   border-color: #4a69bd;
   box-shadow: 0 0 0 3px rgba(74,105,189,0.12);
 }
-.form-group input.error {
+.form-group input.error,
+.form-group select.error {
   border-color: #e74c3c;
   background: #fff5f5;
 }
