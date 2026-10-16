@@ -1,5 +1,5 @@
 // ====== CẤU HÌNH API (giống script.js) ======
-const API_URL = 'https://script.google.com/macros/s/AKfycbyog24ythbDJww9ZIRgndyBjTwuUluFAXLjpoduS6yDkftbRT-ruxvfbpbTJL2IjLM6fg/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxFf96vqePLiowBvNbOwDHoLtY__CiQfbJ3K9KuM5kgQxvQAOYWQl_uUhyK-l4NJgV11w/exec';
 
 // Nhãn 5 mức độ (HS + GV gộp)
 const LABELS_5 = [
