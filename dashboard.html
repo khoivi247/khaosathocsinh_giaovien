@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - Phân tích khảo sát NCKH</title>
+  <title>Phân tích khảo sát | Question Focus 24/7</title>
   <link rel="stylesheet" href="dashboard.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -13,43 +13,53 @@
 
   <!-- HEADER -->
   <div class="dash-header">
-    <h1>📊 DASHBOARD PHÂN TÍCH KHẢO SÁT</h1>
-    <p>Dự án: Sử dụng Chatbot Question Focus 24/7 nhằm thay đổi hành vi học tập của học sinh</p>
-    <a href="index.html" class="btn-home">← Về trang khảo sát</a>
+    <div class="header-copy">
+      <p class="eyebrow">BÁO CÁO NGHIÊN CỨU KHOA HỌC · 2026</p>
+      <h1>Phân tích khảo sát</h1>
+      <p class="project-name">Sử dụng Chatbot Question Focus 24/7 nhằm thay đổi hành vi học tập của học sinh</p>
+    </div>
+    <a href="index.html" class="btn-home">Về trang khảo sát <span aria-hidden="true">↗</span></a>
   </div>
 
-  <!-- TỔNG QUAN -->
+  <section class="school-filter" aria-label="Chọn trường để xem dữ liệu khảo sát">
+    <div>
+      <p class="filter-kicker">PHẠM VI BÁO CÁO</p>
+      <label for="schoolFilter">Chọn trường</label>
+    </div>
+    <select id="schoolFilter" aria-describedby="selectedSchool">
+      <option value="PTDTNT THCS&THPT Văn Quan">PTDTNT THCS&amp;THPT Văn Quan — dữ liệu cũ</option>
+      <option value="THPT Lương Văn Tri" selected>THPT Lương Văn Tri</option>
+      <option value="THPT Cao Lộc">THPT Cao Lộc</option>
+    </select>
+    <p id="selectedSchool" aria-live="polite">Đang tải dữ liệu riêng của THPT Lương Văn Tri</p>
+  </section>
+
   <div class="stats-overview" id="overview">
     <div class="stat-card">
-      <div class="stat-icon">🎓</div>
       <div class="stat-value" id="totalStudent">—</div>
       <div class="stat-label">Học sinh đã trả lời</div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon">👩‍🏫</div>
       <div class="stat-value" id="totalTeacher">—</div>
       <div class="stat-label">Giáo viên đã trả lời</div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon">📝</div>
       <div class="stat-value" id="totalAll">—</div>
-      <div class="stat-label">Tổng lượt khảo sát</div>
+      <div class="stat-label">Tổng phản hồi tại trường</div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon">🕒</div>
       <div class="stat-value" id="lastUpdate">—</div>
-      <div class="stat-label">Cập nhật lần cuối</div>
+      <div class="stat-label">Tải dữ liệu lúc</div>
     </div>
   </div>
 
   <!-- LOADING -->
-  <div id="loading" class="loading-box">⏳ Đang tải dữ liệu...</div>
+  <div id="loading" class="loading-box">Đang tải dữ liệu...</div>
 
-  <!-- TABS -->
   <div class="tabs" id="tabs" style="display:none;">
-    <button class="tab-btn active" data-tab="student">🎓 Học sinh</button>
-    <button class="tab-btn" data-tab="teacher">👩‍🏫 Giáo viên</button>
-    <button class="tab-btn" data-tab="open">💬 Ý kiến mở (GV)</button>
+    <button class="tab-btn active" data-tab="student">Học sinh</button>
+    <button class="tab-btn" data-tab="teacher">Giáo viên</button>
+    <button class="tab-btn" data-tab="open">Ý kiến mở · Giáo viên</button>
   </div>
 
   <!-- TAB HỌC SINH -->
@@ -68,7 +78,7 @@
       <div class="chart-card"><canvas id="chart-s6"></canvas></div>
     </div>
 
-    <h2 class="section-heading">📈 Điểm trung bình 6 câu hỏi (thang 1–5)</h2>
+    <h2 class="section-heading">Điểm trung bình 6 câu hỏi (thang 1–5)</h2>
     <div class="chart-card full"><canvas id="chart-student-avg"></canvas></div>
   </div>
 
@@ -98,20 +108,20 @@
       <div class="chart-card"><canvas id="chart-t12"></canvas></div>
     </div>
 
-    <h2 class="section-heading">📈 Điểm trung bình 12 câu hỏi (thang 1–5)</h2>
+    <h2 class="section-heading">Điểm trung bình 12 câu hỏi (thang 1–5)</h2>
     <div class="chart-card full"><canvas id="chart-teacher-avg"></canvas></div>
   </div>
 
   <!-- TAB Ý KIẾN MỞ -->
   <div id="tab-open" class="tab-content">
-    <h2 class="section-heading">💬 Đề xuất từ giáo viên</h2>
+    <h2 class="section-heading">Đề xuất từ giáo viên</h2>
     <div id="openAnswersList" class="open-list">
       <p class="empty">Đang tải...</p>
     </div>
   </div>
 
   <div class="dash-footer">
-    <p>© Nhóm nghiên cứu PTDTNT THCS&THPT Văn Quan — Lạng Sơn</p>
+    <p>Nhóm nghiên cứu · PTDTNT THCS&amp;THPT Văn Quan, Lạng Sơn</p>
   </div>
 
 </div>
