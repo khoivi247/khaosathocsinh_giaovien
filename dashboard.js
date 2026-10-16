@@ -1,5 +1,5 @@
 // ====== CẤU HÌNH API (giống script.js) ======
-const API_URL = 'https://script.google.com/macros/s/AKfycbxcYBm_aP8xn9qGP_2ESS2MRYrfQFedjaWVylnN_YnVtIsIOEydYTTo1qJ-Gn-rIQBz-A/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyog24ythbDJww9ZIRgndyBjTwuUluFAXLjpoduS6yDkftbRT-ruxvfbpbTJL2IjLM6fg/exec';
 
 // Nhãn 5 mức độ (HS + GV gộp)
 const LABELS_5 = [
@@ -10,14 +10,16 @@ const LABELS_5 = [
   'Rất TX /\nHoàn toàn ĐY'
 ];
 
-const COLORS = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#27ae60'];
+const COLORS = ['#a84d45', '#c47c45', '#d4aa58', '#5d8a78', '#315b62'];
 
 // Lưu chart instance để hủy khi vẽ lại
 const chartInstances = {};
+let dashboardRequestId = 0;
 
 // ====== KHỞI ĐỘNG ======
 document.addEventListener('DOMContentLoaded', function () {
   setupTabs();
+  document.getElementById('schoolFilter').addEventListener('change', loadDashboard);
   loadDashboard();
 });
 
@@ -35,11 +37,39 @@ function setupTabs() {
 
 // ====== LOAD DASHBOARD ======
 function loadDashboard() {
-  fetch(API_URL + '?action=getStats')
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
+  const requestId = ++dashboardRequestId;
+  const school = document.getElementById('schoolFilter').value;
+  const params = new URLSearchParams({
+    school: school,
+    request: String(Date.now())
+  });
+  const schoolLabel = document.getElementById('schoolFilter').selectedOptions[0].textContent;
+  const loading = document.getElementById('loading');
+  document.getElementById('overview').style.display = 'none';
+  document.getElementById('tabs').style.display = 'none';
+  loading.textContent = 'Đang tải dữ liệu khảo sát...';
+  loading.style.display = 'block';
+
+  Promise.all([
+    fetch(API_URL + '?action=getStats&' + params.toString(), { cache: 'no-store' }).then(function (res) {
+      if (!res.ok) throw new Error('Không tải được thống kê khảo sát.');
+      return res.json();
+    }),
+    fetch(API_URL + '?action=getOpenAnswers&' + params.toString(), { cache: 'no-store' }).then(function (res) {
+      if (!res.ok) throw new Error('Không tải được ý kiến mở.');
+      return res.json();
+    })
+  ])
+    .then(function (results) {
+      if (requestId !== dashboardRequestId) return;
+      const data = results[0];
+      if (!data || data.school !== school) {
+        throw new Error('API đang chạy phiên bản cũ, chưa trả dữ liệu riêng cho trường đã chọn. Hãy cập nhật và triển khai lại Apps Script.');
+      }
       document.getElementById('loading').style.display = 'none';
+      document.getElementById('overview').style.display = 'grid';
       document.getElementById('tabs').style.display = 'flex';
+      document.getElementById('selectedSchool').textContent = 'Đang xem dữ liệu riêng của ' + schoolLabel;
 
       renderOverview(data);
 
@@ -55,12 +85,13 @@ function loadDashboard() {
         showEmptyTeacher();
       }
 
-      loadOpenAnswers();
+      renderOpenAnswers(results[1]);
     })
     .catch(function (err) {
+      if (requestId !== dashboardRequestId) return;
       console.error('Lỗi tải dữ liệu:', err);
       document.getElementById('loading').innerHTML =
-        '❌ Không tải được dữ liệu. Kiểm tra lại URL API hoặc deploy Apps Script!<br>' +
+        'Không thể tải đúng dữ liệu của trường đã chọn. Hãy kiểm tra phiên bản triển khai Apps Script và URL API.<br>' +
         '<small style="color:#b2bec3;">' + err + '</small>';
     });
 }
@@ -127,29 +158,38 @@ function cleanLabel(label) {
 function showEmptyStudent() {
   ['s1','s2','s3','s4','s5','s6'].forEach(function (id) {
     const canvas = document.getElementById('chart-' + id);
-    if (canvas) canvas.parentElement.innerHTML =
-      '<p class="empty">Chưa có dữ liệu học sinh</p>';
+    setChartEmpty(canvas, 'Chưa có dữ liệu học sinh cho trường này');
   });
   const avgCanvas = document.getElementById('chart-student-avg');
-  if (avgCanvas) avgCanvas.parentElement.innerHTML =
-    '<p class="empty">Chưa có dữ liệu học sinh</p>';
+  setChartEmpty(avgCanvas, 'Chưa có dữ liệu học sinh cho trường này');
 }
 
 function showEmptyTeacher() {
   for (let i = 1; i <= 12; i++) {
     const canvas = document.getElementById('chart-t' + i);
-    if (canvas) canvas.parentElement.innerHTML =
-      '<p class="empty">Chưa có dữ liệu giáo viên</p>';
+    setChartEmpty(canvas, 'Chưa có dữ liệu giáo viên cho trường này');
   }
   const avgCanvas = document.getElementById('chart-teacher-avg');
-  if (avgCanvas) avgCanvas.parentElement.innerHTML =
-    '<p class="empty">Chưa có dữ liệu giáo viên</p>';
+  setChartEmpty(avgCanvas, 'Chưa có dữ liệu giáo viên cho trường này');
+}
+
+function setChartEmpty(canvas, message) {
+  if (!canvas) return;
+  const chart = chartInstances[canvas.id];
+  if (chart) {
+    chart.destroy();
+    delete chartInstances[canvas.id];
+  }
+  canvas.parentElement.classList.add('is-empty');
+  canvas.parentElement.dataset.emptyMessage = message;
 }
 
 // ====== DONUT CHART ======
 function createDonutChart(canvasId, title, counts, avg) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
+  canvas.parentElement.classList.remove('is-empty');
+  delete canvas.parentElement.dataset.emptyMessage;
   if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
 
   const total = counts.reduce((a, b) => a + b, 0);
@@ -199,6 +239,8 @@ function createDonutChart(canvasId, title, counts, avg) {
 function createAvgBarChart(canvasId, labels, values, title) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
+  canvas.parentElement.classList.remove('is-empty');
+  delete canvas.parentElement.dataset.emptyMessage;
   if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
 
   chartInstances[canvasId] = new Chart(canvas, {
@@ -249,26 +291,18 @@ function createAvgBarChart(canvasId, labels, values, title) {
 }
 
 // ====== Ý KIẾN MỞ ======
-function loadOpenAnswers() {
-  fetch(API_URL + '?action=getOpenAnswers')
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
-      const list = document.getElementById('openAnswersList');
-      if (!data || data.length === 0) {
-        list.innerHTML = '<p class="empty">Chưa có ý kiến nào từ giáo viên.</p>';
-        return;
-      }
-      list.innerHTML = data.map(function (text, idx) {
-        return '<div class="open-item">' +
-          '<span class="num">#' + (idx + 1) + '</span>' +
-          escapeHtml(text) +
-        '</div>';
-      }).join('');
-    })
-    .catch(function (err) {
-      document.getElementById('openAnswersList').innerHTML =
-        '<p class="empty">Không tải được ý kiến mở.</p>';
-    });
+function renderOpenAnswers(data) {
+  const list = document.getElementById('openAnswersList');
+  if (!data || data.length === 0) {
+    list.innerHTML = '<p class="empty">Chưa có ý kiến nào từ giáo viên ở trường này.</p>';
+    return;
+  }
+  list.innerHTML = data.map(function (text, idx) {
+    return '<div class="open-item">' +
+      '<span class="num">#' + (idx + 1) + '</span>' +
+      escapeHtml(text) +
+    '</div>';
+  }).join('');
 }
 
 // ====== ESCAPE HTML ======
