@@ -1,5 +1,5 @@
 // ====== CẤU HÌNH API (giống script.js) ======
-const API_URL = 'https://script.google.com/macros/s/AKfycbxFf96vqePLiowBvNbOwDHoLtY__CiQfbJ3K9KuM5kgQxvQAOYWQl_uUhyK-l4NJgV11w/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyNAKohteCw5XyAWwkwLKfE5E6BFfU5l7EfdaAbb8UIAiebUZaCiTjLo0Keg180bzPsmw/exec';
 
 // Nhãn 5 mức độ (HS + GV gộp)
 const LABELS_5 = [
@@ -58,6 +58,12 @@ function loadDashboard() {
     fetch(API_URL + '?action=getOpenAnswers&' + params.toString(), { cache: 'no-store' }).then(function (res) {
       if (!res.ok) throw new Error('Không tải được ý kiến mở.');
       return res.json();
+    }),
+    fetch(API_URL + '?action=getAllOpenAnswers&request=' + Date.now(), { cache: 'no-store' }).then(function (res) {
+      if (!res.ok) throw new Error('Không tải được tổng hợp ý kiến các trường.');
+      return res.json();
+    }).catch(function (err) {
+      return { error: err.message };
     })
   ])
     .then(function (results) {
@@ -86,6 +92,7 @@ function loadDashboard() {
       }
 
       renderOpenAnswers(results[1]);
+      renderAllOpenAnswers(results[2]);
     })
     .catch(function (err) {
       if (requestId !== dashboardRequestId) return;
@@ -301,6 +308,26 @@ function renderOpenAnswers(data) {
     return '<div class="open-item">' +
       '<span class="num">#' + (idx + 1) + '</span>' +
       escapeHtml(text) +
+    '</div>';
+  }).join('');
+}
+
+function renderAllOpenAnswers(data) {
+  const list = document.getElementById('allOpenAnswersList');
+  if (data && data.error) {
+    list.innerHTML = '<p class="empty">Không thể tải tổng hợp ý kiến. Hãy cập nhật và triển khai lại Apps Script. ' +
+      escapeHtml(data.error) + '</p>';
+    return;
+  }
+  if (!Array.isArray(data) || data.length === 0) {
+    list.innerHTML = '<p class="empty">Chưa có ý kiến mở từ giáo viên ở các trường.</p>';
+    return;
+  }
+  list.innerHTML = data.map(function (answer, idx) {
+    return '<div class="open-item">' +
+      '<span class="num">#' + (idx + 1) + '</span>' +
+      '<span class="opinion-meta">' + escapeHtml(answer.role) + ' · ' + escapeHtml(answer.school) + '</span>' +
+      escapeHtml(answer.text) +
     '</div>';
   }).join('');
 }
