@@ -60,6 +60,7 @@
     <button class="tab-btn active" data-tab="student">Học sinh</button>
     <button class="tab-btn" data-tab="teacher">Giáo viên</button>
     <button class="tab-btn" data-tab="open">Ý kiến mở · Giáo viên</button>
+    <button class="tab-btn" data-tab="all-opinions">Tổng hợp tất cả ý kiến</button>
   </div>
 
   <!-- TAB HỌC SINH -->
@@ -116,6 +117,16 @@
   <div id="tab-open" class="tab-content">
     <h2 class="section-heading">Đề xuất từ giáo viên</h2>
     <div id="openAnswersList" class="open-list">
+      <p class="empty">Đang tải...</p>
+    </div>
+  </div>
+
+  <div id="tab-all-opinions" class="tab-content">
+    <h2 class="section-heading">Ý kiến mở từ tất cả các trường</h2>
+    <p class="opinion-notice">
+      Khảo sát học sinh hiện chưa có câu hỏi ý kiến mở. Danh sách dưới đây tổng hợp toàn bộ ý kiến mở của giáo viên từ các trường.
+    </p>
+    <div id="allOpenAnswersList" class="open-list">
       <p class="empty">Đang tải...</p>
     </div>
   </div>
