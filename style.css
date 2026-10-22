@@ -401,3 +401,137 @@ textarea:focus { outline: none; border-color: #4a69bd; }
   .survey, .result, .role-section { padding: 20px; }
   .role-btn { min-width: 100%; }
 }
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes gradient-drift {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
+}
+@keyframes banner-reveal {
+  from { opacity: 0; transform: scale(1.025); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+body {
+  background-size: 180% 180%;
+  animation: gradient-drift 22s ease-in-out infinite alternate;
+}
+.container {
+  animation: page-enter 700ms cubic-bezier(.2,.75,.3,1) both;
+}
+.header {
+  background: linear-gradient(120deg, #4a69bd, #6a89cc, #536fc0);
+  background-size: 200% 200%;
+  animation: gradient-drift 14s ease-in-out infinite alternate;
+}
+.header h1, .header .subtitle { animation: page-enter 650ms 120ms both; }
+.banner-img { animation: banner-reveal 900ms 100ms both; }
+
+.intro-content > p,
+.intro-content > h2,
+.intro-content > ul,
+.intro-content > .term-box,
+.intro-content > .contact {
+  animation: page-enter 550ms both;
+}
+.intro-content > :nth-child(2) { animation-delay: 60ms; }
+.intro-content > :nth-child(3) { animation-delay: 110ms; }
+.intro-content > :nth-child(4) { animation-delay: 160ms; }
+.term-box,
+.topic,
+.gift-note {
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+.term-box:hover,
+.topic:hover,
+.gift-note:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(45,52,54,0.1);
+}
+.term-box:hover { border-left-color: #6a89cc; }
+
+.role-btn {
+  animation: page-enter 550ms cubic-bezier(.2,.75,.3,1) both;
+  transition: border-color 240ms ease, transform 240ms ease, box-shadow 240ms ease, background 240ms ease;
+}
+.role-btn:nth-child(2) { animation-delay: 100ms; }
+.role-btn:focus-visible,
+.btn-submit:focus-visible,
+.btn-back:focus-visible,
+.btn-chatbot:focus-visible {
+  outline: 3px solid rgba(74,105,189,0.45);
+  outline-offset: 3px;
+}
+.role-btn:active { transform: translateY(-1px) scale(0.99); }
+
+.info-section,
+.survey.active,
+.result.active,
+.role-section {
+  animation: page-enter 480ms cubic-bezier(.2,.75,.3,1) both;
+}
+.form-group input,
+.form-group select,
+textarea {
+  transition: border-color 200ms ease, box-shadow 200ms ease, background 200ms ease;
+}
+.form-group input:focus,
+.form-group select:focus,
+textarea:focus {
+  box-shadow: 0 0 0 4px rgba(74,105,189,0.1);
+}
+.question {
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+.question:hover {
+  transform: translateY(-2px);
+  border-left-color: #4a69bd;
+  box-shadow: 0 8px 20px rgba(45,52,54,0.07);
+}
+.option {
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+.option:hover { transform: translateX(3px); }
+.option.selected { border-color: #4a69bd; background: #eef2ff; }
+
+.btn-submit,
+.btn-chatbot,
+.btn-back {
+  transition: transform 220ms ease, box-shadow 220ms ease, background 220ms ease;
+}
+.btn-submit:not(:disabled):active,
+.btn-chatbot:active,
+.btn-back:active {
+  transform: translateY(0) scale(0.99);
+}
+.btn-submit:not(:disabled):hover,
+.btn-chatbot:hover { filter: saturate(1.08); }
+.progress-fill { position: relative; }
+.progress-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  transform: translateX(-100%);
+  animation: progress-glint 2.4s ease-in-out infinite;
+}
+@keyframes progress-glint {
+  to { transform: translateX(100%); }
+}
+.gift-box { transition: transform 240ms ease, box-shadow 240ms ease; }
+.gift-box:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 26px rgba(180,133,34,0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
