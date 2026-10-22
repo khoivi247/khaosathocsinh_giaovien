@@ -1,5 +1,6 @@
 // ====== CẤU HÌNH API (giống script.js) ======
-const API_URL = 'https://script.google.com/macros/s/AKfycbyNAKohteCw5XyAWwkwLKfE5E6BFfU5l7EfdaAbb8UIAiebUZaCiTjLo0Keg180bzPsmw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxztKCmTjdGlW_P6Td_4W55jdxKNL-HJGQD1L0Gwz1p03cfusiGWRRsaoHV5EVK21IqXA/exec';
+const ALL_SCHOOLS = '__all_schools__';
 
 // Nhãn 5 mức độ (HS + GV gộp)
 const LABELS_5 = [
@@ -39,6 +40,7 @@ function setupTabs() {
 function loadDashboard() {
   const requestId = ++dashboardRequestId;
   const school = document.getElementById('schoolFilter').value;
+  const isAllSchools = school === ALL_SCHOOLS;
   const params = new URLSearchParams({
     school: school,
     request: String(Date.now())
@@ -50,22 +52,35 @@ function loadDashboard() {
   loading.textContent = 'Đang tải dữ liệu khảo sát...';
   loading.style.display = 'block';
 
-  Promise.all([
-    fetch(API_URL + '?action=getStats&' + params.toString(), { cache: 'no-store' }).then(function (res) {
-      if (!res.ok) throw new Error('Không tải được thống kê khảo sát.');
-      return res.json();
-    }),
-    fetch(API_URL + '?action=getOpenAnswers&' + params.toString(), { cache: 'no-store' }).then(function (res) {
-      if (!res.ok) throw new Error('Không tải được ý kiến mở.');
-      return res.json();
-    }),
-    fetch(API_URL + '?action=getAllOpenAnswers&request=' + Date.now(), { cache: 'no-store' }).then(function (res) {
-      if (!res.ok) throw new Error('Không tải được tổng hợp ý kiến các trường.');
-      return res.json();
-    }).catch(function (err) {
-      return { error: err.message };
-    })
-  ])
+  const aggregatePromise = isAllSchools
+    ? fetch(API_URL + '?action=getAllOpinions&request=' + Date.now(), { cache: 'no-store' }).then(function (res) {
+        if (!res.ok) throw new Error('Không tải được tổng hợp ý kiến các trường.');
+        return res.json();
+      })
+    : null;
+  const statsPromise = isAllSchools
+    ? aggregatePromise.then(function (aggregate) {
+        if (!aggregate || !aggregate.student || !aggregate.teacher || !Array.isArray(aggregate.openAnswers)) {
+          throw new Error('Dữ liệu tổng hợp không đúng định dạng. Hãy cập nhật và triển khai lại Apps Script.');
+        }
+        return {
+          school: school,
+          student: aggregate.student,
+          teacher: aggregate.teacher
+        };
+      })
+    : fetch(API_URL + '?action=getStats&' + params.toString(), { cache: 'no-store' }).then(function (res) {
+        if (!res.ok) throw new Error('Không tải được thống kê khảo sát.');
+        return res.json();
+      });
+  const openAnswersPromise = isAllSchools
+    ? aggregatePromise.then(function (aggregate) { return aggregate.openAnswers; })
+    : fetch(API_URL + '?action=getOpenAnswers&' + params.toString(), { cache: 'no-store' }).then(function (res) {
+        if (!res.ok) throw new Error('Không tải được ý kiến mở.');
+        return res.json();
+      });
+
+  Promise.all([statsPromise, openAnswersPromise])
     .then(function (results) {
       if (requestId !== dashboardRequestId) return;
       const data = results[0];
@@ -75,7 +90,12 @@ function loadDashboard() {
       document.getElementById('loading').style.display = 'none';
       document.getElementById('overview').style.display = 'grid';
       document.getElementById('tabs').style.display = 'flex';
-      document.getElementById('selectedSchool').textContent = 'Đang xem dữ liệu riêng của ' + schoolLabel;
+      document.getElementById('selectedSchool').textContent = isAllSchools
+        ? 'Đang xem dữ liệu tổng hợp của tất cả các trường'
+        : 'Đang xem dữ liệu riêng của ' + schoolLabel;
+      document.querySelector('#totalAll').nextElementSibling.textContent = isAllSchools
+        ? 'Tổng phản hồi tất cả các trường'
+        : 'Tổng phản hồi tại trường';
 
       renderOverview(data);
 
@@ -91,8 +111,7 @@ function loadDashboard() {
         showEmptyTeacher();
       }
 
-      renderOpenAnswers(results[1]);
-      renderAllOpenAnswers(results[2]);
+      renderOpenAnswers(results[1], isAllSchools);
     })
     .catch(function (err) {
       if (requestId !== dashboardRequestId) return;
@@ -298,36 +317,24 @@ function createAvgBarChart(canvasId, labels, values, title) {
 }
 
 // ====== Ý KIẾN MỞ ======
-function renderOpenAnswers(data) {
+function renderOpenAnswers(data, isAllSchools) {
   const list = document.getElementById('openAnswersList');
   if (!data || data.length === 0) {
-    list.innerHTML = '<p class="empty">Chưa có ý kiến nào từ giáo viên ở trường này.</p>';
-    return;
-  }
-  list.innerHTML = data.map(function (text, idx) {
-    return '<div class="open-item">' +
-      '<span class="num">#' + (idx + 1) + '</span>' +
-      escapeHtml(text) +
-    '</div>';
-  }).join('');
-}
-
-function renderAllOpenAnswers(data) {
-  const list = document.getElementById('allOpenAnswersList');
-  if (data && data.error) {
-    list.innerHTML = '<p class="empty">Không thể tải tổng hợp ý kiến. Hãy cập nhật và triển khai lại Apps Script. ' +
-      escapeHtml(data.error) + '</p>';
-    return;
-  }
-  if (!Array.isArray(data) || data.length === 0) {
-    list.innerHTML = '<p class="empty">Chưa có ý kiến mở từ giáo viên ở các trường.</p>';
+    list.innerHTML = '<p class="empty">' +
+      (isAllSchools
+        ? 'Chưa có ý kiến mở từ giáo viên ở tất cả các trường.'
+        : 'Chưa có ý kiến nào từ giáo viên ở trường này.') +
+    '</p>';
     return;
   }
   list.innerHTML = data.map(function (answer, idx) {
+    const isTaggedAnswer = answer && typeof answer === 'object';
     return '<div class="open-item">' +
       '<span class="num">#' + (idx + 1) + '</span>' +
-      '<span class="opinion-meta">' + escapeHtml(answer.role) + ' · ' + escapeHtml(answer.school) + '</span>' +
-      escapeHtml(answer.text) +
+      (isTaggedAnswer
+        ? '<span class="opinion-meta">' + escapeHtml(answer.role) + ' · ' + escapeHtml(answer.school) + '</span>' +
+          escapeHtml(answer.text)
+        : escapeHtml(answer)) +
     '</div>';
   }).join('');
 }
