@@ -1,5 +1,5 @@
 // ====== CẤU HÌNH API (giống script.js) ======
-const API_URL = 'https://script.google.com/macros/s/AKfycbw04U1HZhuHgP8xWhTXc0J-j6N6CiXE3xUVgReb2oHpROdMELAjwj6BKkilerGC46KMPA/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzXT-h64qkPxDT8wtPPFzWuZkpM6F5_ePXcuQCt-Q6NUFoHu7ERHyFW5rVMRHRyZXKwzw/exec';
 const ALL_SCHOOLS = '__all_schools__';
 
 // Nhãn 5 mức độ (HS + GV gộp)
@@ -42,15 +42,6 @@ function loadDashboard() {
   const requestId = ++dashboardRequestId;
   const schoolFilter = document.getElementById('schoolFilter');
   const surveyType = document.getElementById('surveyFilter').value;
-  const legacySchoolOption = Array.from(schoolFilter.options).find(function (option) {
-    return option.value === 'PTDTNT THCS&THPT Văn Quan';
-  });
-  if (legacySchoolOption) {
-    legacySchoolOption.hidden = surveyType === 'post';
-    if (surveyType === 'post' && schoolFilter.value === legacySchoolOption.value) {
-      schoolFilter.value = 'THPT Lương Văn Tri';
-    }
-  }
   const school = schoolFilter.value;
   const isAllSchools = school === ALL_SCHOOLS;
   const params = new URLSearchParams({
@@ -142,6 +133,14 @@ function loadDashboard() {
 
 function updateSurveyDashboardUI(surveyType) {
   const isPostSurvey = surveyType === 'post';
+  const legacySchoolOption = Array.from(document.getElementById('schoolFilter').options).find(function (option) {
+    return option.value === 'PTDTNT THCS&THPT Văn Quan';
+  });
+  if (legacySchoolOption) {
+    legacySchoolOption.textContent = isPostSurvey
+      ? 'PTDTNT THCS&THPT Văn Quan'
+      : 'PTDTNT THCS&THPT Văn Quan — dữ liệu cũ';
+  }
   document.getElementById('student-heading-1').textContent = isPostSurvey
     ? 'Câu hỏi 1–3: Trải nghiệm học sinh sau khi áp dụng mô hình'
     : 'Phần 1: Biểu hiện sự ỷ lại (Câu 1–3)';
