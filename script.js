@@ -1,5 +1,5 @@
 // ====== CẤU HÌNH API ======
-const API_URL = 'https://script.google.com/macros/s/AKfycbw04U1HZhuHgP8xWhTXc0J-j6N6CiXE3xUVgReb2oHpROdMELAjwj6BKkilerGC46KMPA/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxFns7v96PHqUmE3EEXhEdq7rmHrE_53sYztemA6JbT9BKWfaors7FO8jiygVYlXMkC4w/exec';
 
 // Biến lưu vai trò hiện tại
 let currentRole = null;
