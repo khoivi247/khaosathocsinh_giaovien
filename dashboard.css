@@ -71,7 +71,7 @@ body {
 
 .school-filter {
   display: grid;
-  grid-template-columns: minmax(180px, 0.7fr) minmax(260px, 1.3fr) minmax(220px, 1fr);
+  grid-template-columns: minmax(160px, 0.7fr) minmax(220px, 1.2fr) minmax(220px, 1.2fr) minmax(200px, 1fr);
   align-items: center;
   gap: 20px;
   background: var(--white);
@@ -206,6 +206,7 @@ body {
   font-size: 13px;
   pointer-events: none;
 }
+[hidden] { display: none !important; }
 
 .open-list { display: flex; flex-direction: column; gap: 10px; }
 .open-item {
