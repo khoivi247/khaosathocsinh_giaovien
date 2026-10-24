@@ -1,5 +1,5 @@
 // ====== CẤU HÌNH API (giống script.js) ======
-const API_URL = 'https://script.google.com/macros/s/AKfycbxztKCmTjdGlW_P6Td_4W55jdxKNL-HJGQD1L0Gwz1p03cfusiGWRRsaoHV5EVK21IqXA/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbw04U1HZhuHgP8xWhTXc0J-j6N6CiXE3xUVgReb2oHpROdMELAjwj6BKkilerGC46KMPA/exec';
 const ALL_SCHOOLS = '__all_schools__';
 
 // Nhãn 5 mức độ (HS + GV gộp)
@@ -21,6 +21,7 @@ let dashboardRequestId = 0;
 document.addEventListener('DOMContentLoaded', function () {
   setupTabs();
   document.getElementById('schoolFilter').addEventListener('change', loadDashboard);
+  document.getElementById('surveyFilter').addEventListener('change', loadDashboard);
   loadDashboard();
 });
 
@@ -39,10 +40,22 @@ function setupTabs() {
 // ====== LOAD DASHBOARD ======
 function loadDashboard() {
   const requestId = ++dashboardRequestId;
-  const school = document.getElementById('schoolFilter').value;
+  const schoolFilter = document.getElementById('schoolFilter');
+  const surveyType = document.getElementById('surveyFilter').value;
+  const legacySchoolOption = Array.from(schoolFilter.options).find(function (option) {
+    return option.value === 'PTDTNT THCS&THPT Văn Quan';
+  });
+  if (legacySchoolOption) {
+    legacySchoolOption.hidden = surveyType === 'post';
+    if (surveyType === 'post' && schoolFilter.value === legacySchoolOption.value) {
+      schoolFilter.value = 'THPT Lương Văn Tri';
+    }
+  }
+  const school = schoolFilter.value;
   const isAllSchools = school === ALL_SCHOOLS;
   const params = new URLSearchParams({
     school: school,
+    surveyType: surveyType,
     request: String(Date.now())
   });
   const schoolLabel = document.getElementById('schoolFilter').selectedOptions[0].textContent;
@@ -53,7 +66,8 @@ function loadDashboard() {
   loading.style.display = 'block';
 
   const aggregatePromise = isAllSchools
-    ? fetch(API_URL + '?action=getAllOpinions&request=' + Date.now(), { cache: 'no-store' }).then(function (res) {
+    ? fetch(API_URL + '?action=getAllOpinions&surveyType=' + encodeURIComponent(surveyType) +
+      '&request=' + Date.now(), { cache: 'no-store' }).then(function (res) {
         if (!res.ok) throw new Error('Không tải được tổng hợp ý kiến các trường.');
         return res.json();
       })
@@ -91,27 +105,31 @@ function loadDashboard() {
       document.getElementById('overview').style.display = 'grid';
       document.getElementById('tabs').style.display = 'flex';
       document.getElementById('selectedSchool').textContent = isAllSchools
-        ? 'Đang xem dữ liệu tổng hợp của tất cả các trường'
-        : 'Đang xem dữ liệu riêng của ' + schoolLabel;
+        ? 'Đang xem dữ liệu ' + (surveyType === 'post' ? 'sau áp dụng' : 'ban đầu') + ' tổng hợp của tất cả các trường'
+        : 'Đang xem dữ liệu ' + (surveyType === 'post' ? 'sau áp dụng' : 'ban đầu') + ' của ' + schoolLabel;
       document.querySelector('#totalAll').nextElementSibling.textContent = isAllSchools
         ? 'Tổng phản hồi tất cả các trường'
         : 'Tổng phản hồi tại trường';
 
+      updateSurveyDashboardUI(surveyType);
       renderOverview(data);
 
       if (data.student && data.student.total > 0) {
         renderStudent(data.student);
       } else {
-        showEmptyStudent();
+        showEmptyStudent('Chưa có dữ liệu học sinh cho ' + (isAllSchools ? 'tất cả các trường' : schoolLabel));
       }
 
       if (data.teacher && data.teacher.total > 0) {
         renderTeacher(data.teacher);
       } else {
-        showEmptyTeacher();
+        showEmptyTeacher(
+          data.teacher && data.teacher.questions ? data.teacher.questions.length : 12,
+          'Chưa có dữ liệu giáo viên cho ' + (isAllSchools ? 'tất cả các trường' : schoolLabel)
+        );
       }
 
-      renderOpenAnswers(results[1], isAllSchools);
+      renderOpenAnswers(results[1], isAllSchools, surveyType);
     })
     .catch(function (err) {
       if (requestId !== dashboardRequestId) return;
@@ -120,6 +138,39 @@ function loadDashboard() {
         'Không thể tải đúng dữ liệu của trường đã chọn. Hãy kiểm tra phiên bản triển khai Apps Script và URL API.<br>' +
         '<small style="color:#b2bec3;">' + err + '</small>';
     });
+}
+
+function updateSurveyDashboardUI(surveyType) {
+  const isPostSurvey = surveyType === 'post';
+  document.getElementById('student-heading-1').textContent = isPostSurvey
+    ? 'Câu hỏi 1–3: Trải nghiệm học sinh sau khi áp dụng mô hình'
+    : 'Phần 1: Biểu hiện sự ỷ lại (Câu 1–3)';
+  document.getElementById('student-heading-2').textContent = isPostSurvey
+    ? 'Câu hỏi 4–6: Tư duy phản biện và kiểm chứng thông tin'
+    : 'Phần 2: Biểu hiện học tập chủ động (Câu 4–6)';
+  document.getElementById('student-average-heading').textContent =
+    'Điểm trung bình 6 câu hỏi (thang 1–5)';
+
+  document.getElementById('teacher-heading-1').textContent = isPostSurvey
+    ? 'Đánh giá của giáo viên sau khi áp dụng mô hình (Câu 1–5)'
+    : 'Phần 1: Thực trạng hành vi học tập (Câu 1–4)';
+  document.getElementById('teacher-heading-2').hidden = isPostSurvey;
+  document.getElementById('teacher-heading-3').hidden = isPostSurvey;
+  document.getElementById('teacher-heading-2').textContent = 'Phần 2: Yếu tố ảnh hưởng (Câu 5–8)';
+  document.getElementById('teacher-heading-3').textContent = 'Phần 3: Tiềm năng giải pháp (Câu 9–12)';
+  document.getElementById('teacher-average-heading').textContent = isPostSurvey
+    ? 'Điểm trung bình 5 câu hỏi (thang 1–5)'
+    : 'Điểm trung bình 12 câu hỏi (thang 1–5)';
+
+  for (let i = 6; i <= 12; i++) {
+    document.getElementById('chart-t' + i).parentElement.hidden = isPostSurvey;
+  }
+
+  const openTab = document.querySelector('[data-tab="open"]');
+  openTab.hidden = isPostSurvey;
+  if (isPostSurvey && openTab.classList.contains('active')) {
+    document.querySelector('[data-tab="student"]').click();
+  }
 }
 
 // ====== OVERVIEW ======
@@ -181,22 +232,22 @@ function cleanLabel(label) {
 }
 
 // ====== EMPTY STATE ======
-function showEmptyStudent() {
+function showEmptyStudent(message) {
   ['s1','s2','s3','s4','s5','s6'].forEach(function (id) {
     const canvas = document.getElementById('chart-' + id);
-    setChartEmpty(canvas, 'Chưa có dữ liệu học sinh cho trường này');
+    setChartEmpty(canvas, message || 'Chưa có dữ liệu học sinh cho trường này');
   });
   const avgCanvas = document.getElementById('chart-student-avg');
-  setChartEmpty(avgCanvas, 'Chưa có dữ liệu học sinh cho trường này');
+  setChartEmpty(avgCanvas, message || 'Chưa có dữ liệu học sinh cho trường này');
 }
 
-function showEmptyTeacher() {
-  for (let i = 1; i <= 12; i++) {
+function showEmptyTeacher(questionCount, message) {
+  for (let i = 1; i <= questionCount; i++) {
     const canvas = document.getElementById('chart-t' + i);
-    setChartEmpty(canvas, 'Chưa có dữ liệu giáo viên cho trường này');
+    setChartEmpty(canvas, message || 'Chưa có dữ liệu giáo viên cho trường này');
   }
   const avgCanvas = document.getElementById('chart-teacher-avg');
-  setChartEmpty(avgCanvas, 'Chưa có dữ liệu giáo viên cho trường này');
+  setChartEmpty(avgCanvas, message || 'Chưa có dữ liệu giáo viên cho trường này');
 }
 
 function setChartEmpty(canvas, message) {
@@ -317,13 +368,15 @@ function createAvgBarChart(canvasId, labels, values, title) {
 }
 
 // ====== Ý KIẾN MỞ ======
-function renderOpenAnswers(data, isAllSchools) {
+function renderOpenAnswers(data, isAllSchools, surveyType) {
   const list = document.getElementById('openAnswersList');
   if (!data || data.length === 0) {
     list.innerHTML = '<p class="empty">' +
-      (isAllSchools
-        ? 'Chưa có ý kiến mở từ giáo viên ở tất cả các trường.'
-        : 'Chưa có ý kiến nào từ giáo viên ở trường này.') +
+      (surveyType === 'post'
+        ? 'Phiếu khảo sát sau áp dụng không có câu hỏi ý kiến mở.'
+        : (isAllSchools
+          ? 'Chưa có ý kiến mở từ giáo viên ở tất cả các trường.'
+          : 'Chưa có ý kiến nào từ giáo viên ở trường này.')) +
     '</p>';
     return;
   }
