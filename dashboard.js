@@ -1,5 +1,5 @@
 // ====== CẤU HÌNH API (giống script.js) ======
-const API_URL = 'https://script.google.com/macros/s/AKfycbzXT-h64qkPxDT8wtPPFzWuZkpM6F5_ePXcuQCt-Q6NUFoHu7ERHyFW5rVMRHRyZXKwzw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxFns7v96PHqUmE3EEXhEdq7rmHrE_53sYztemA6JbT9BKWfaors7FO8jiygVYlXMkC4w/exec';
 const ALL_SCHOOLS = '__all_schools__';
 
 // Nhãn 5 mức độ (HS + GV gộp)
