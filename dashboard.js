@@ -1,5 +1,5 @@
 // ====== CẤU HÌNH API (giống script.js) ======
-const API_URL = 'https://script.google.com/macros/s/AKfycbxFns7v96PHqUmE3EEXhEdq7rmHrE_53sYztemA6JbT9BKWfaors7FO8jiygVYlXMkC4w/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbz2y0o_WdCzBl-EP82jxGAR0_OlbQRxWMPRkAypx5PIfBy4cZ_HrXUK8eSmB5M5uHfMMQ/exec';
 const ALL_SCHOOLS = '__all_schools__';
 
 // Nhãn 5 mức độ (HS + GV gộp)
@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
   setupTabs();
   document.getElementById('schoolFilter').addEventListener('change', loadDashboard);
   document.getElementById('surveyFilter').addEventListener('change', loadDashboard);
+  document.getElementById('exportCharts').addEventListener('click', exportCharts);
   loadDashboard();
 });
 
@@ -33,8 +34,393 @@ function setupTabs() {
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       this.classList.add('active');
       document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+      updateExportAvailability();
     });
   });
+}
+
+function updateExportAvailability() {
+  const activeTab = document.querySelector('.tab-btn.active');
+  const button = document.getElementById('exportCharts');
+  if (button) button.disabled = !activeTab || activeTab.dataset.tab === 'open';
+}
+
+function exportCharts() {
+  const button = document.getElementById('exportCharts');
+  const format = document.getElementById('exportFormat').value;
+  const activeTab = document.querySelector('.tab-content.active');
+  const tabName = activeTab && activeTab.id.replace('tab-', '');
+  const chartIds = tabName === 'student'
+    ? ['chart-s1', 'chart-s2', 'chart-s3', 'chart-s4', 'chart-s5', 'chart-s6', 'chart-student-avg']
+    : tabName === 'teacher'
+      ? Array.from({ length: 12 }, function (_, index) { return 'chart-t' + (index + 1); })
+        .concat(['chart-teacher-avg'])
+      : [];
+  let charts;
+  try {
+    charts = chartIds.map(function (id) {
+      const canvas = document.getElementById(id);
+      const chart = canvas && chartInstances[id];
+      if (!canvas || !chart || canvas.parentElement.hidden || canvas.parentElement.classList.contains('is-empty')) {
+        return null;
+      }
+      if (canvas.width <= 0 || canvas.height <= 0) {
+        throw new Error('Biểu đồ chưa sẵn sàng để xuất. Hãy mở lại mục biểu đồ và thử lại.');
+      }
+      const title = chart.options.plugins.title.text;
+      return {
+        title: Array.isArray(title) ? title.join(' ') : String(title || ''),
+        type: chart.config.type,
+        labels: chart.data.labels.slice(),
+        values: chart.data.datasets[0].data.map(Number),
+        colors: chart.data.datasets[0].backgroundColor,
+        average: title.match(/\(TB:\s*([^)]+)\)/i)?.[1] || '',
+        averageChart: chart.config.type === 'bar'
+      };
+    }).filter(Boolean);
+  } catch (error) {
+    console.error('Không thể chuẩn bị biểu đồ để xuất:', error);
+    alert('Không thể chuẩn bị biểu đồ để xuất: ' + error.message);
+    return;
+  }
+
+  if (!charts.length) {
+    alert('Không có biểu đồ để xuất trong mục đang mở.');
+    return;
+  }
+
+  const oldLabel = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Đang xuất...';
+  const school = document.getElementById('schoolFilter').selectedOptions[0].textContent;
+  const survey = document.getElementById('surveyFilter').selectedOptions[0].textContent;
+  const report = {
+    school: school,
+    survey: survey,
+    section: tabName === 'student' ? 'Học sinh' : 'Giáo viên',
+    charts: charts,
+    fileName: createExportFileName(school, survey, tabName)
+  };
+  const exportTask = format === 'docx'
+    ? loadExportLibrary(
+      'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js',
+      'docx'
+    ).then(function () { return downloadDocx(report); })
+    : loadExportLibrary(
+      'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js',
+      'jspdf'
+    ).then(function () { return downloadPdf(report); });
+
+  exportTask.catch(function (error) {
+    console.error('Không thể xuất biểu đồ:', error);
+    alert('Không thể xuất biểu đồ: ' + error.message);
+  }).finally(function () {
+    button.disabled = false;
+    button.textContent = oldLabel;
+    updateExportAvailability();
+  });
+}
+
+function loadExportLibrary(url, globalName) {
+  if (window[globalName]) return Promise.resolve(window[globalName]);
+  return new Promise(function (resolve, reject) {
+    const script = document.createElement('script');
+    script.src = url;
+    script.onload = function () {
+      if (!window[globalName]) {
+        reject(new Error('Thư viện xuất tệp tải về nhưng không khởi tạo được.'));
+        return;
+      }
+      resolve(window[globalName]);
+    };
+    script.onerror = function () {
+      reject(new Error('Không tải được thư viện xuất tệp. Hãy kiểm tra kết nối mạng và thử lại.'));
+    };
+    document.head.appendChild(script);
+  });
+}
+
+function createExportFileName(school, survey, section) {
+  return [school, survey, section].join('-')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase();
+}
+
+function downloadBlob(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+
+function drawWrappedText(context, text, x, y, maxWidth, lineHeight, maxLines) {
+  const words = String(text).split(/\s+/);
+  const lines = [];
+  let line = '';
+  words.forEach(function (word) {
+    const candidate = line ? line + ' ' + word : word;
+    if (line && context.measureText(candidate).width > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  });
+  if (line) lines.push(line);
+
+  const visibleLines = lines.slice(0, maxLines);
+  if (lines.length > maxLines) {
+    let lastLine = visibleLines[maxLines - 1];
+    while (lastLine && context.measureText(lastLine + '…').width > maxWidth) {
+      lastLine = lastLine.slice(0, -1);
+    }
+    visibleLines[maxLines - 1] = lastLine + '…';
+  }
+  visibleLines.forEach(function (item, index) {
+    context.fillText(item, x, y + index * lineHeight);
+  });
+  return visibleLines.length * lineHeight;
+}
+
+function createExportChart(chart, width, height) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const values = chart.values;
+  const isAverage = chart.averageChart;
+  const labelPlugin = {
+    id: 'exportNumericLabels',
+    afterDatasetsDraw: function (instance) {
+      const context = instance.ctx;
+      context.save();
+      context.fillStyle = isAverage ? '#172b23' : '#fff';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.font = '700 ' + (isAverage ? 32 : 26) + 'px "Segoe UI", Arial, sans-serif';
+      instance.getDatasetMeta(0).data.forEach(function (element, index) {
+        const value = Number(values[index]);
+        if (!Number.isFinite(value) || value <= 0) return;
+        if (isAverage) {
+          const position = element.getProps(['x', 'y'], true);
+          context.fillText(value.toFixed(2), position.x, position.y - 25);
+          return;
+        }
+        const position = element.getProps(
+          ['x', 'y', 'startAngle', 'endAngle', 'innerRadius', 'outerRadius'],
+          true
+        );
+        if (position.endAngle - position.startAngle < 0.16) return;
+        const angle = (position.startAngle + position.endAngle) / 2;
+        const radius = (position.innerRadius + position.outerRadius) / 2;
+        context.fillText(String(value), position.x + Math.cos(angle) * radius, position.y + Math.sin(angle) * radius);
+      });
+      context.restore();
+    }
+  };
+  const colors = Array.isArray(chart.colors) ? chart.colors : COLORS;
+  const dataset = {
+    data: values,
+    backgroundColor: colors,
+    borderColor: '#fff',
+    borderWidth: 3
+  };
+  if (isAverage) dataset.borderRadius = 8;
+  const options = {
+    responsive: false,
+    maintainAspectRatio: false,
+    animation: false,
+    layout: { padding: isAverage ? { top: 34, left: 20, right: 20 } : 14 },
+    plugins: {
+      title: { display: false },
+      legend: { display: false },
+      tooltip: { enabled: false }
+    }
+  };
+  if (isAverage) {
+    options.scales = {
+      y: { beginAtZero: true, max: 5, ticks: { stepSize: 1, font: { size: 22 } } },
+      x: { ticks: { font: { size: 22 } } }
+    };
+  } else {
+    options.cutout = '55%';
+  }
+  const instance = new Chart(canvas.getContext('2d'), {
+    type: chart.type,
+    data: { labels: chart.labels, datasets: [dataset] },
+    options: options,
+    plugins: [labelPlugin]
+  });
+  instance.update('none');
+  instance.render();
+  const image = document.createElement('canvas');
+  image.width = width;
+  image.height = height;
+  image.getContext('2d').drawImage(canvas, 0, 0);
+  instance.destroy();
+  return image;
+}
+
+function renderExportPage(report) {
+  const page = document.createElement('canvas');
+  page.width = 1800;
+  page.height = 1273;
+  const context = page.getContext('2d');
+  if (!context) throw new Error('Không thể tạo trang tổng hợp biểu đồ.');
+
+  const layoutWidth = 2400;
+  const layoutHeight = 1697;
+  context.scale(page.width / layoutWidth, page.height / layoutHeight);
+  const margin = 70;
+  const contentWidth = layoutWidth - margin * 2;
+  const averageChart = report.charts.find(function (chart) { return chart.averageChart; });
+  const questionCharts = report.charts.filter(function (chart) { return !chart.averageChart; });
+  const columns = questionCharts.length > 8 ? 4 : questionCharts.length > 3 ? 3 : Math.max(1, questionCharts.length);
+  const rows = Math.ceil(questionCharts.length / columns);
+  const averageHeight = averageChart ? 320 : 0;
+  const gridTop = 300;
+  const averageTop = layoutHeight - margin - averageHeight;
+  const gridHeight = Math.max(1, averageTop - gridTop);
+  const cellWidth = contentWidth / columns;
+  const cellHeight = rows ? gridHeight / rows : 0;
+
+  context.fillStyle = '#f5faf7';
+  context.fillRect(0, 0, layoutWidth, layoutHeight);
+  context.fillStyle = '#14532d';
+  context.font = '700 52px "Segoe UI", Arial, sans-serif';
+  context.fillText('Biểu đồ khảo sát', margin, 83);
+  context.fillStyle = '#33473d';
+  context.font = '30px "Segoe UI", Arial, sans-serif';
+  context.fillText(report.school + ' · ' + report.section, margin, 132);
+  context.font = '26px "Segoe UI", Arial, sans-serif';
+  context.fillText(report.survey, margin, 174);
+
+  const legendWidth = contentWidth / LABELS_5.length;
+  context.font = '20px "Segoe UI", Arial, sans-serif';
+  LABELS_5.forEach(function (label, index) {
+    const x = margin + index * legendWidth;
+    context.fillStyle = COLORS[index];
+    context.fillRect(x, 210, 20, 20);
+    context.fillStyle = '#33473d';
+    drawWrappedText(context, 'M' + (index + 1) + ': ' + label.replace(/\n/g, ' / '), x + 29, 226, legendWidth - 36, 25, 2);
+  });
+
+  questionCharts.forEach(function (chart, index) {
+    const row = Math.floor(index / columns);
+    const column = index % columns;
+    const x = margin + column * cellWidth;
+    const y = gridTop + row * cellHeight;
+    const inset = 12;
+    const cardX = x + inset;
+    const cardY = y + inset;
+    const cardWidth = cellWidth - inset * 2;
+    const cardHeight = cellHeight - inset * 2;
+
+    context.fillStyle = '#fff';
+    context.fillRect(cardX, cardY, cardWidth, cardHeight);
+    context.strokeStyle = '#dcebe2';
+    context.lineWidth = 2;
+    context.strokeRect(cardX, cardY, cardWidth, cardHeight);
+    context.fillStyle = '#172b23';
+    context.font = '700 23px "Segoe UI", Arial, sans-serif';
+    const titleHeight = drawWrappedText(context, chart.title, cardX + 18, cardY + 32, cardWidth - 36, 27, 5);
+
+    const infoHeight = 57;
+    const plotY = cardY + titleHeight + 10;
+    const plotHeight = Math.max(80, cardHeight - titleHeight - infoHeight - 24);
+    const renderedChart = createExportChart(
+      chart,
+      Math.max(1, Math.floor(cardWidth - 34)),
+      Math.max(1, Math.floor(plotHeight))
+    );
+    const chartScale = Math.min((cardWidth - 34) / renderedChart.width, plotHeight / renderedChart.height);
+    const chartWidth = renderedChart.width * chartScale;
+    const chartHeight = renderedChart.height * chartScale;
+    context.drawImage(
+      renderedChart,
+      cardX + (cardWidth - chartWidth) / 2,
+      plotY + (plotHeight - chartHeight) / 2,
+      chartWidth,
+      chartHeight
+    );
+
+    const total = chart.values.reduce(function (sum, value) { return sum + Number(value || 0); }, 0);
+    const average = chart.average || (total
+      ? (chart.values.reduce(function (sum, value, valueIndex) {
+        return sum + Number(value || 0) * (valueIndex + 1);
+      }, 0) / total).toFixed(2)
+      : '0.00');
+    context.fillStyle = '#14532d';
+    context.font = '700 22px "Segoe UI", Arial, sans-serif';
+    context.textAlign = 'center';
+    context.fillText('N = ' + total + '   ·   TB = ' + average, cardX + cardWidth / 2, cardY + cardHeight - 35);
+    context.font = '22px "Segoe UI", Arial, sans-serif';
+    context.fillText(
+      'M1–M5: ' + chart.values.map(function (value) { return Number(value || 0); }).join(' · '),
+      cardX + cardWidth / 2,
+      cardY + cardHeight - 10
+    );
+    context.textAlign = 'left';
+  });
+
+  if (averageChart) {
+    context.fillStyle = '#fff';
+    context.fillRect(margin, averageTop, contentWidth, averageHeight - 5);
+    context.strokeStyle = '#dcebe2';
+    context.strokeRect(margin, averageTop, contentWidth, averageHeight - 5);
+    context.fillStyle = '#14532d';
+    context.font = '700 28px "Segoe UI", Arial, sans-serif';
+    context.fillText(averageChart.title, margin + 24, averageTop + 40);
+    const renderedAverage = createExportChart(averageChart, contentWidth - 60, averageHeight - 74);
+    context.drawImage(renderedAverage, margin + 30, averageTop + 52, contentWidth - 60, averageHeight - 74);
+  }
+
+  return page;
+}
+
+async function downloadDocx(report) {
+  const library = window.docx;
+  const { Document, ImageRun, Packer, Paragraph, PageOrientation } = library;
+  const image = renderExportPage(report).toDataURL('image/png').split(',')[1];
+  const binary = window.atob(image);
+  const imageData = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) imageData[i] = binary.charCodeAt(i);
+  const documentFile = new Document({
+    sections: [{
+      properties: {
+        page: {
+          size: { orientation: PageOrientation.LANDSCAPE, width: 11906, height: 16838 },
+          margin: { top: 240, right: 300, bottom: 240, left: 300 }
+        }
+      },
+      children: [new Paragraph({
+        spacing: { before: 0, after: 0 },
+        children: [new ImageRun({
+          data: imageData,
+          transformation: { width: 1030, height: 728 },
+          type: 'png'
+        })]
+      })]
+    }]
+  });
+  downloadBlob(await Packer.toBlob(documentFile), report.fileName + '.docx');
+}
+
+async function downloadPdf(report) {
+  const JsPDF = window.jspdf.jsPDF;
+  const pdf = new JsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  pdf.addImage(renderExportPage(report).toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageWidth, pageHeight);
+  downloadBlob(pdf.output('blob'), report.fileName + '.pdf');
 }
 
 // ====== LOAD DASHBOARD ======
@@ -104,6 +490,7 @@ function loadDashboard() {
 
       updateSurveyDashboardUI(surveyType);
       renderOverview(data);
+      updateExportAvailability();
 
       if (data.student && data.student.total > 0) {
         renderStudent(data.student);
