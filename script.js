@@ -1,5 +1,5 @@
 // ====== CẤU HÌNH API ======
-const API_URL = 'https://script.google.com/macros/s/AKfycbxFns7v96PHqUmE3EEXhEdq7rmHrE_53sYztemA6JbT9BKWfaors7FO8jiygVYlXMkC4w/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbz2y0o_WdCzBl-EP82jxGAR0_OlbQRxWMPRkAypx5PIfBy4cZ_HrXUK8eSmB5M5uHfMMQ/exec';
 
 // Biến lưu vai trò hiện tại
 let currentRole = null;
@@ -18,7 +18,7 @@ const POST_SURVEY_QUESTIONS = {
     'Thầy/cô thấy mô hình này đã chỉ ra và giải quyết đúng thói quen lạm dụng công nghệ và chép bài chống đối của học sinh hiện nay.',
     'Mô hình Sổ tay tự vấn kết hợp Chatbot AI Question Focus 24/7 hỗ trợ giáo viên rất nhiều trong việc đổi mới hiệu quả phương pháp dạy học.',
     'Mô hình này rất gần gũi, dễ thực hiện và hoàn toàn có thể triển khai rộng rãi cho các lớp, các trường khác.',
-    'Nhờ việc rèn luyện cách tự đặt câu hỏi, học sinh trên lớp mạnh dạn, tự tin hơn, tự tin đưa ra thắc mắc với giáo viên thay vì ngồi im thụ động.',
+    'Nhờ việc rèn luyện cách tự đặt câu hỏi, học sinh trên lớp dạn dĩ hơn, tự tin đưa ra thắc mắc với giáo viên thay vì ngồi im thụ động.',
     'Khi chấm bài hoặc gọi lên bảng, tôi thấy học sinh hiểu bản chất vấn đề sâu hơn, tự diễn đạt bằng lời của mình chứ không học vẹt.'
   ]
 };
