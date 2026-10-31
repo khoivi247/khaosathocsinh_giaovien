@@ -770,6 +770,76 @@ body::after {
 }
 .dash-footer { border-color: var(--line); }
 
+.export-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.export-controls select {
+  min-height: 42px;
+  padding: 9px 12px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 12px;
+}
+.export-button {
+  min-height: 42px;
+  padding: 10px 15px;
+  color: #fff;
+  background: linear-gradient(120deg, #14532d, #059669);
+  border: 0;
+  border-radius: 9px;
+  box-shadow: 0 6px 16px rgba(5,150,105,0.18);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  transition: transform 200ms ease, box-shadow 200ms ease, filter 200ms ease;
+}
+.export-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 9px 20px rgba(5,150,105,0.25);
+  filter: brightness(1.04);
+}
+.export-button:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+.export-button:focus-visible, .export-controls select:focus-visible {
+  outline: 3px solid rgba(5,150,105,0.35);
+  outline-offset: 3px;
+}
+.export-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 767px) {
+  .tabs { align-items: stretch; }
+  .export-controls {
+    flex: 1 0 100%;
+    justify-content: flex-end;
+    margin-left: 0;
+    padding-top: 6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .export-button { transition: none; }
+}
+
 @keyframes dash-ambient {
   from { transform: translate3d(0, -2vh, 0) scale(0.94); }
   to { transform: translate3d(8vw, 5vh, 0) scale(1.08); }
