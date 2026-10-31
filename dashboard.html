@@ -28,15 +28,17 @@
     </div>
     <select id="schoolFilter" aria-describedby="selectedSchool">
       <option value="PTDTNT THCS&THPT Văn Quan">PTDTNT THCS&amp;THPT Văn Quan</option>
-      <option value="THPT Lương Văn Tri" selected>THPT Lương Văn Tri</option>
-      <option value="THPT Đồng Đăng">THPT Đồng Đăng</option>
+      <option value="PTDTNT THCS&THPT Bắc Sơn" selected>PTDTNT THCS&amp;THPT Bắc Sơn</option>
+      <option value="PTDTNT THCS&THPT Lộc Bình">PTDTNT THCS&amp;THPT Lộc Bình</option>
+      <option value="PTDTNT THCS&THPT Văn Lãng">PTDTNT THCS&amp;THPT Văn Lãng</option>
+      <option value="PTDTNT THCS&THPT Chi Lăng">PTDTNT THCS&amp;THPT Chi Lăng</option>
       <option value="__all_schools__">Tổng hợp tất cả ý kiến</option>
     </select>
     <select id="surveyFilter" aria-label="Chọn loại khảo sát">
       <option value="initial">Khảo sát ban đầu</option>
       <option value="post" selected>Khảo sát sau khi áp dụng mô hình</option>
     </select>
-    <p id="selectedSchool" aria-live="polite">Đang tải dữ liệu riêng của THPT Lương Văn Tri</p>
+    <p id="selectedSchool" aria-live="polite">Đang tải dữ liệu riêng của PTDTNT THCS&amp;THPT Bắc Sơn</p>
   </section>
 
   <div class="stats-overview" id="overview">
@@ -65,6 +67,14 @@
     <button class="tab-btn active" data-tab="student">Học sinh</button>
     <button class="tab-btn" data-tab="teacher">Giáo viên</button>
     <button class="tab-btn" data-tab="open">Ý kiến mở · Giáo viên</button>
+    <div class="export-controls">
+      <label class="visually-hidden" for="exportFormat">Định dạng tệp xuất</label>
+      <select id="exportFormat">
+        <option value="pdf">PDF</option>
+        <option value="docx">DOCX</option>
+      </select>
+      <button type="button" class="export-button" id="exportCharts">Trích xuất biểu đồ</button>
+    </div>
   </div>
 
   <!-- TAB HỌC SINH -->
