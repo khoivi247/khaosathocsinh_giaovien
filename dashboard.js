@@ -53,7 +53,7 @@ function exportCharts() {
   const chartIds = tabName === 'student'
     ? ['chart-s1', 'chart-s2', 'chart-s3', 'chart-s4', 'chart-s5', 'chart-s6', 'chart-student-avg']
     : tabName === 'teacher'
-      ? Array.from({ length: 12 }, function (_, index) { return 'chart-t' + (index + 1); })
+      ? ['chart-teacher-part1', 'chart-teacher-part2', 'chart-t9', 'chart-t10', 'chart-t11', 'chart-t12']
         .concat(['chart-teacher-avg'])
       : [];
   let charts;
@@ -74,8 +74,17 @@ function exportCharts() {
         labels: chart.data.labels.slice(),
         values: chart.data.datasets[0].data.map(Number),
         colors: chart.data.datasets[0].backgroundColor,
+        datasets: chart.data.datasets.map(function (dataset) {
+          return {
+            label: dataset.label,
+            values: dataset.data.map(Number),
+            color: dataset.backgroundColor
+          };
+        }),
+        distributionChart: chart.exportType === 'distribution',
+        responseTotal: chart.responseTotal || 0,
         average: title.match(/\(TB:\s*([^)]+)\)/i)?.[1] || '',
-        averageChart: chart.config.type === 'bar'
+        averageChart: chart.exportType === 'average'
       };
     }).filter(Boolean);
   } catch (error) {
@@ -197,55 +206,96 @@ function createExportChart(chart, width, height) {
   canvas.height = height;
   const values = chart.values;
   const isAverage = chart.averageChart;
+  const isDistribution = chart.distributionChart;
   const labelPlugin = {
     id: 'exportNumericLabels',
     afterDatasetsDraw: function (instance) {
       const context = instance.ctx;
       context.save();
-      context.fillStyle = isAverage ? '#172b23' : '#fff';
       context.textAlign = 'center';
       context.textBaseline = 'middle';
-      context.font = '700 ' + (isAverage ? 32 : 26) + 'px "Segoe UI", Arial, sans-serif';
-      instance.getDatasetMeta(0).data.forEach(function (element, index) {
-        const value = Number(values[index]);
-        if (!Number.isFinite(value) || value <= 0) return;
-        if (isAverage) {
-          const position = element.getProps(['x', 'y'], true);
-          context.fillText(value.toFixed(2), position.x, position.y - 25);
-          return;
-        }
-        const position = element.getProps(
-          ['x', 'y', 'startAngle', 'endAngle', 'innerRadius', 'outerRadius'],
-          true
-        );
-        if (position.endAngle - position.startAngle < 0.16) return;
-        const angle = (position.startAngle + position.endAngle) / 2;
-        const radius = (position.innerRadius + position.outerRadius) / 2;
-        context.fillText(String(value), position.x + Math.cos(angle) * radius, position.y + Math.sin(angle) * radius);
-      });
+      if (isDistribution) {
+        context.fillStyle = '#172b23';
+        context.font = '700 13px "Segoe UI", Arial, sans-serif';
+        instance.data.datasets.forEach(function (dataset, datasetIndex) {
+          instance.getDatasetMeta(datasetIndex).data.forEach(function (element, index) {
+            const value = Number(dataset.data[index]);
+            if (!Number.isFinite(value) || value <= 0) return;
+            const position = element.getProps(['x', 'y'], true);
+            const labelY = value < 7
+              ? position.y - 8 - datasetIndex * 12
+              : position.y - 12;
+            context.fillText(value.toFixed(1) + '%', position.x, labelY);
+          });
+        });
+      } else {
+        context.fillStyle = isAverage ? '#172b23' : '#fff';
+        context.font = '700 ' + (isAverage ? 32 : 26) + 'px "Segoe UI", Arial, sans-serif';
+        instance.getDatasetMeta(0).data.forEach(function (element, index) {
+          const value = Number(values[index]);
+          if (!Number.isFinite(value) || value <= 0) return;
+          if (isAverage) {
+            const position = element.getProps(['x', 'y'], true);
+            context.fillText(value.toFixed(2), position.x, position.y - 25);
+            return;
+          }
+          const position = element.getProps(
+            ['x', 'y', 'startAngle', 'endAngle', 'innerRadius', 'outerRadius'],
+            true
+          );
+          if (position.endAngle - position.startAngle < 0.16) return;
+          const angle = (position.startAngle + position.endAngle) / 2;
+          const radius = (position.innerRadius + position.outerRadius) / 2;
+          context.fillText(String(value), position.x + Math.cos(angle) * radius, position.y + Math.sin(angle) * radius);
+        });
+      }
       context.restore();
     }
   };
   const colors = Array.isArray(chart.colors) ? chart.colors : COLORS;
-  const dataset = {
-    data: values,
-    backgroundColor: colors,
-    borderColor: '#fff',
-    borderWidth: 3
-  };
-  if (isAverage) dataset.borderRadius = 8;
+  const datasets = isDistribution
+    ? chart.datasets.map(function (dataset) {
+        return {
+          label: dataset.label,
+          data: dataset.values,
+          backgroundColor: dataset.color,
+          borderColor: '#fff',
+          borderWidth: 1,
+          borderRadius: 3
+        };
+      })
+    : [{
+        data: values,
+        backgroundColor: colors,
+        borderColor: '#fff',
+        borderWidth: 3,
+        borderRadius: isAverage ? 8 : 0
+      }];
   const options = {
     responsive: false,
     maintainAspectRatio: false,
     animation: false,
-    layout: { padding: isAverage ? { top: 34, left: 20, right: 20 } : 14 },
+    layout: { padding: isAverage || isDistribution ? { top: 34, left: 20, right: 20 } : 14 },
     plugins: {
       title: { display: false },
-      legend: { display: false },
+      legend: {
+        display: isDistribution,
+        position: 'bottom',
+        labels: { font: { size: 16 }, boxWidth: 16, padding: 10 }
+      },
       tooltip: { enabled: false }
     }
   };
-  if (isAverage) {
+  if (isDistribution) {
+    options.scales = {
+      y: {
+        beginAtZero: true,
+        max: 100,
+        ticks: { stepSize: 20, font: { size: 18 }, callback: function (value) { return value + '%'; } }
+      },
+      x: { ticks: { font: { size: 20 } } }
+    };
+  } else if (isAverage) {
     options.scales = {
       y: { beginAtZero: true, max: 5, ticks: { stepSize: 1, font: { size: 22 } } },
       x: { ticks: { font: { size: 22 } } }
@@ -255,7 +305,7 @@ function createExportChart(chart, width, height) {
   }
   const instance = new Chart(canvas.getContext('2d'), {
     type: chart.type,
-    data: { labels: chart.labels, datasets: [dataset] },
+    data: { labels: chart.labels, datasets: datasets },
     options: options,
     plugins: [labelPlugin]
   });
@@ -361,13 +411,21 @@ function renderExportPage(report) {
     context.fillStyle = '#14532d';
     context.font = '700 22px "Segoe UI", Arial, sans-serif';
     context.textAlign = 'center';
-    context.fillText('N = ' + total + '   ·   TB = ' + average, cardX + cardWidth / 2, cardY + cardHeight - 35);
-    context.font = '22px "Segoe UI", Arial, sans-serif';
-    context.fillText(
-      'M1–M5: ' + chart.values.map(function (value) { return Number(value || 0); }).join(' · '),
-      cardX + cardWidth / 2,
-      cardY + cardHeight - 10
-    );
+    if (chart.distributionChart) {
+      context.fillText(
+        'Tỷ lệ phản hồi (%)   ·   N = ' + chart.responseTotal + ' giáo viên',
+        cardX + cardWidth / 2,
+        cardY + cardHeight - 22
+      );
+    } else {
+      context.fillText('N = ' + total + '   ·   TB = ' + average, cardX + cardWidth / 2, cardY + cardHeight - 35);
+      context.font = '22px "Segoe UI", Arial, sans-serif';
+      context.fillText(
+        'M1–M5: ' + chart.values.map(function (value) { return Number(value || 0); }).join(' · '),
+        cardX + cardWidth / 2,
+        cardY + cardHeight - 10
+      );
+    }
     context.textAlign = 'left';
   });
 
@@ -499,11 +557,12 @@ function loadDashboard() {
       }
 
       if (data.teacher && data.teacher.total > 0) {
-        renderTeacher(data.teacher);
+        renderTeacher(data.teacher, surveyType);
       } else {
         showEmptyTeacher(
           data.teacher && data.teacher.questions ? data.teacher.questions.length : 12,
-          'Chưa có dữ liệu giáo viên cho ' + (isAllSchools ? 'tất cả các trường' : schoolLabel)
+          'Chưa có dữ liệu giáo viên cho ' + (isAllSchools ? 'tất cả các trường' : schoolLabel),
+          surveyType
         );
       }
 
@@ -548,9 +607,10 @@ function updateSurveyDashboardUI(surveyType) {
     ? 'Điểm trung bình 5 câu hỏi (thang 1–5)'
     : 'Điểm trung bình 12 câu hỏi (thang 1–5)';
 
-  for (let i = 6; i <= 12; i++) {
+  for (let i = 9; i <= 12; i++) {
     document.getElementById('chart-t' + i).parentElement.hidden = isPostSurvey;
   }
+  document.getElementById('teacher-part2-chart').hidden = isPostSurvey;
 
   const openTab = document.querySelector('[data-tab="open"]');
   openTab.hidden = isPostSurvey;
@@ -594,11 +654,34 @@ function renderStudent(stats) {
 }
 
 // ====== RENDER GIÁO VIÊN ======
-function renderTeacher(stats) {
-  stats.questions.forEach(function (q, idx) {
+function renderTeacher(stats, surveyType) {
+  if (!Array.isArray(stats.questions)) {
+    throw new Error('Dữ liệu câu hỏi giáo viên từ API không đúng định dạng.');
+  }
+  const firstSectionCount = surveyType === 'post' ? stats.questions.length : 4;
+  createTeacherDistributionChart(
+    'chart-teacher-part1',
+    stats.questions.slice(0, firstSectionCount),
+    0,
+    surveyType === 'post'
+      ? 'Đánh giá của giáo viên sau khi áp dụng mô hình (%)'
+      : 'Phân bố câu trả lời của giáo viên — Phần 1 (%)',
+    stats.total
+  );
+  if (surveyType !== 'post') {
+    createTeacherDistributionChart(
+      'chart-teacher-part2',
+      stats.questions.slice(4, 8),
+      4,
+      'Phân bố câu trả lời của giáo viên — Phần 2 (%)',
+      stats.total
+    );
+  }
+
+  stats.questions.slice(8).forEach(function (q, idx) {
     createDonutChart(
-      'chart-t' + (idx + 1),
-      'Câu ' + (idx + 1) + ': ' + cleanLabel(q.label),
+      'chart-t' + (idx + 9),
+      'Câu ' + (idx + 9) + ': ' + cleanLabel(q.label),
       q.counts,
       q.avg
     );
@@ -610,6 +693,122 @@ function renderTeacher(stats) {
     stats.questions.map(q => Number(q.avg)),
     'Điểm trung bình — Giáo viên (1–5)'
   );
+}
+
+function createTeacherDistributionChart(canvasId, questions, questionOffset, title, responseTotal) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  if (questions.some(function (question) {
+    return !Array.isArray(question.counts) || question.counts.length !== LABELS_5.length ||
+      question.counts.some(function (count) { return !Number.isFinite(Number(count)) || Number(count) < 0; });
+  })) {
+    throw new Error('Số liệu câu trả lời giáo viên từ API không đúng định dạng.');
+  }
+
+  canvas.parentElement.classList.remove('is-empty');
+  delete canvas.parentElement.dataset.emptyMessage;
+  if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+
+  const questionTotals = questions.map(function (question) {
+    return question.counts.reduce(function (sum, count) { return sum + Number(count); }, 0);
+  });
+  const datasets = LABELS_5.map(function (label, ratingIndex) {
+    return {
+      label: 'M' + (ratingIndex + 1) + ' · ' + label.replace(/\n/g, ' '),
+      data: questions.map(function (question, questionIndex) {
+        const total = questionTotals[questionIndex];
+        return total
+          ? Number(question.counts[ratingIndex]) / total * 100
+          : 0;
+      }),
+      backgroundColor: COLORS[ratingIndex],
+      borderColor: '#fff',
+      borderWidth: 1,
+      borderRadius: 3
+    };
+  });
+  const percentageLabelsPlugin = {
+    id: 'teacherPercentageLabels',
+    afterDatasetsDraw: function (chart) {
+      const context = chart.ctx;
+      context.save();
+      context.fillStyle = '#263b32';
+      context.font = '600 11px "Segoe UI", Arial, sans-serif';
+      context.textAlign = 'center';
+      context.textBaseline = 'bottom';
+      chart.data.datasets.forEach(function (dataset, datasetIndex) {
+        chart.getDatasetMeta(datasetIndex).data.forEach(function (element, index) {
+          const value = Number(dataset.data[index]);
+          if (value <= 0) return;
+          const position = element.getProps(['x', 'y'], true);
+          const labelY = value < 7
+            ? position.y - 8 - datasetIndex * 11
+            : position.y - 3;
+          context.fillText(value.toFixed(1) + '%', position.x, labelY);
+        });
+      });
+      context.restore();
+    }
+  };
+
+  chartInstances[canvasId] = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: questions.map(function (_, index) { return 'Câu ' + (questionOffset + index + 1); }),
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { top: 24 } },
+      plugins: {
+        title: {
+          display: true,
+          text: title,
+          font: { size: 15, weight: '600' },
+          color: '#2d3436',
+          padding: { bottom: 12 }
+        },
+        legend: {
+          position: 'bottom',
+          labels: { font: { size: 10 }, boxWidth: 12, padding: 8 }
+        },
+        tooltip: {
+          callbacks: {
+            title: function (items) {
+              const question = questions[items[0].dataIndex];
+              return 'Câu ' + (questionOffset + items[0].dataIndex + 1) + ': ' + cleanLabel(question.label);
+            },
+            label: function (context) {
+              const questionIndex = context.dataIndex;
+              const count = Number(questions[questionIndex].counts[context.datasetIndex]);
+              const total = questionTotals[questionIndex];
+              const percent = total ? (count / total * 100).toFixed(1) : '0.0';
+              return context.dataset.label + ': ' + percent + '% (' + count + '/' + total + ' giáo viên)';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#43564d', font: { size: 12 } }
+        },
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            stepSize: 20,
+            callback: function (value) { return value + '%'; }
+          },
+          title: { display: true, text: 'Tỷ lệ phản hồi (%)' }
+        }
+      }
+    },
+    plugins: [percentageLabelsPlugin]
+  });
+  chartInstances[canvasId].exportType = 'distribution';
+  chartInstances[canvasId].responseTotal = responseTotal;
 }
 
 // Bỏ tiền tố "HS1: ", "GV1: " khỏi label
@@ -627,13 +826,18 @@ function showEmptyStudent(message) {
   setChartEmpty(avgCanvas, message || 'Chưa có dữ liệu học sinh cho trường này');
 }
 
-function showEmptyTeacher(questionCount, message) {
-  for (let i = 1; i <= questionCount; i++) {
+function showEmptyTeacher(questionCount, message, surveyType) {
+  const emptyMessage = message || 'Chưa có dữ liệu giáo viên cho trường này';
+  setChartEmpty(document.getElementById('chart-teacher-part1'), emptyMessage);
+  if (surveyType !== 'post') {
+    setChartEmpty(document.getElementById('chart-teacher-part2'), emptyMessage);
+  }
+  for (let i = 9; i <= questionCount; i++) {
     const canvas = document.getElementById('chart-t' + i);
-    setChartEmpty(canvas, message || 'Chưa có dữ liệu giáo viên cho trường này');
+    setChartEmpty(canvas, emptyMessage);
   }
   const avgCanvas = document.getElementById('chart-teacher-avg');
-  setChartEmpty(avgCanvas, message || 'Chưa có dữ liệu giáo viên cho trường này');
+  setChartEmpty(avgCanvas, emptyMessage);
 }
 
 function setChartEmpty(canvas, message) {
@@ -751,6 +955,7 @@ function createAvgBarChart(canvasId, labels, values, title) {
       }
     }
   });
+  chartInstances[canvasId].exportType = 'average';
 }
 
 // ====== Ý KIẾN MỞ ======
