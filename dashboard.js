@@ -51,7 +51,7 @@ function exportCharts() {
   const activeTab = document.querySelector('.tab-content.active');
   const tabName = activeTab && activeTab.id.replace('tab-', '');
   const chartIds = tabName === 'student'
-    ? ['chart-s1', 'chart-s2', 'chart-s3', 'chart-s4', 'chart-s5', 'chart-s6', 'chart-student-avg']
+    ? ['chart-student-part1', 'chart-student-part2', 'chart-student-avg']
     : tabName === 'teacher'
       ? ['chart-teacher-part1', 'chart-teacher-part2', 'chart-t9', 'chart-t10', 'chart-t11', 'chart-t12']
         .concat(['chart-teacher-avg'])
@@ -83,6 +83,7 @@ function exportCharts() {
         }),
         distributionChart: chart.exportType === 'distribution',
         responseTotal: chart.responseTotal || 0,
+        respondentLabel: chart.respondentLabel || '',
         average: title.match(/\(TB:\s*([^)]+)\)/i)?.[1] || '',
         averageChart: chart.exportType === 'average'
       };
@@ -413,7 +414,7 @@ function renderExportPage(report) {
     context.textAlign = 'center';
     if (chart.distributionChart) {
       context.fillText(
-        'Tỷ lệ phản hồi (%)   ·   N = ' + chart.responseTotal + ' giáo viên',
+        'Tỷ lệ phản hồi (%)   ·   N = ' + chart.responseTotal + ' ' + chart.respondentLabel,
         cardX + cardWidth / 2,
         cardY + cardHeight - 22
       );
@@ -551,7 +552,7 @@ function loadDashboard() {
       updateExportAvailability();
 
       if (data.student && data.student.total > 0) {
-        renderStudent(data.student);
+        renderStudent(data.student, surveyType);
       } else {
         showEmptyStudent('Chưa có dữ liệu học sinh cho ' + (isAllSchools ? 'tất cả các trường' : schoolLabel));
       }
@@ -635,15 +636,31 @@ function renderOverview(data) {
 }
 
 // ====== RENDER HỌC SINH ======
-function renderStudent(stats) {
-  stats.questions.forEach(function (q, idx) {
-    createDonutChart(
-      'chart-s' + (idx + 1),
-      'Câu ' + (idx + 1) + ': ' + cleanLabel(q.label),
-      q.counts,
-      q.avg
-    );
-  });
+function renderStudent(stats, surveyType) {
+  if (!Array.isArray(stats.questions)) {
+    throw new Error('Dữ liệu câu hỏi học sinh từ API không đúng định dạng.');
+  }
+  const firstSectionCount = Math.ceil(stats.questions.length / 2);
+  createDistributionChart(
+    'chart-student-part1',
+    stats.questions.slice(0, firstSectionCount),
+    0,
+    surveyType === 'post'
+      ? 'Phân bố câu trả lời của học sinh — Trải nghiệm (%)'
+      : 'Phân bố câu trả lời của học sinh — Phần 1 (%)',
+    stats.total,
+    'học sinh'
+  );
+  createDistributionChart(
+    'chart-student-part2',
+    stats.questions.slice(firstSectionCount),
+    firstSectionCount,
+    surveyType === 'post'
+      ? 'Phân bố câu trả lời của học sinh — Tư duy và kiểm chứng (%)'
+      : 'Phân bố câu trả lời của học sinh — Phần 2 (%)',
+    stats.total,
+    'học sinh'
+  );
 
   createAvgBarChart(
     'chart-student-avg',
@@ -659,22 +676,24 @@ function renderTeacher(stats, surveyType) {
     throw new Error('Dữ liệu câu hỏi giáo viên từ API không đúng định dạng.');
   }
   const firstSectionCount = surveyType === 'post' ? stats.questions.length : 4;
-  createTeacherDistributionChart(
+  createDistributionChart(
     'chart-teacher-part1',
     stats.questions.slice(0, firstSectionCount),
     0,
     surveyType === 'post'
       ? 'Đánh giá của giáo viên sau khi áp dụng mô hình (%)'
       : 'Phân bố câu trả lời của giáo viên — Phần 1 (%)',
-    stats.total
+    stats.total,
+    'giáo viên'
   );
   if (surveyType !== 'post') {
-    createTeacherDistributionChart(
+    createDistributionChart(
       'chart-teacher-part2',
       stats.questions.slice(4, 8),
       4,
       'Phân bố câu trả lời của giáo viên — Phần 2 (%)',
-      stats.total
+      stats.total,
+      'giáo viên'
     );
   }
 
@@ -695,14 +714,14 @@ function renderTeacher(stats, surveyType) {
   );
 }
 
-function createTeacherDistributionChart(canvasId, questions, questionOffset, title, responseTotal) {
+function createDistributionChart(canvasId, questions, questionOffset, title, responseTotal, respondentLabel) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   if (questions.some(function (question) {
     return !Array.isArray(question.counts) || question.counts.length !== LABELS_5.length ||
       question.counts.some(function (count) { return !Number.isFinite(Number(count)) || Number(count) < 0; });
   })) {
-    throw new Error('Số liệu câu trả lời giáo viên từ API không đúng định dạng.');
+    throw new Error('Số liệu câu trả lời từ API không đúng định dạng.');
   }
 
   canvas.parentElement.classList.remove('is-empty');
@@ -728,7 +747,7 @@ function createTeacherDistributionChart(canvasId, questions, questionOffset, tit
     };
   });
   const percentageLabelsPlugin = {
-    id: 'teacherPercentageLabels',
+    id: 'distributionPercentageLabels',
     afterDatasetsDraw: function (chart) {
       const context = chart.ctx;
       context.save();
@@ -784,7 +803,7 @@ function createTeacherDistributionChart(canvasId, questions, questionOffset, tit
               const count = Number(questions[questionIndex].counts[context.datasetIndex]);
               const total = questionTotals[questionIndex];
               const percent = total ? (count / total * 100).toFixed(1) : '0.0';
-              return context.dataset.label + ': ' + percent + '% (' + count + '/' + total + ' giáo viên)';
+              return context.dataset.label + ': ' + percent + '% (' + count + '/' + total + ' ' + respondentLabel + ')';
             }
           }
         }
@@ -809,6 +828,7 @@ function createTeacherDistributionChart(canvasId, questions, questionOffset, tit
   });
   chartInstances[canvasId].exportType = 'distribution';
   chartInstances[canvasId].responseTotal = responseTotal;
+  chartInstances[canvasId].respondentLabel = respondentLabel;
 }
 
 // Bỏ tiền tố "HS1: ", "GV1: " khỏi label
@@ -818,12 +838,11 @@ function cleanLabel(label) {
 
 // ====== EMPTY STATE ======
 function showEmptyStudent(message) {
-  ['s1','s2','s3','s4','s5','s6'].forEach(function (id) {
-    const canvas = document.getElementById('chart-' + id);
-    setChartEmpty(canvas, message || 'Chưa có dữ liệu học sinh cho trường này');
-  });
+  const emptyMessage = message || 'Chưa có dữ liệu học sinh cho trường này';
+  setChartEmpty(document.getElementById('chart-student-part1'), emptyMessage);
+  setChartEmpty(document.getElementById('chart-student-part2'), emptyMessage);
   const avgCanvas = document.getElementById('chart-student-avg');
-  setChartEmpty(avgCanvas, message || 'Chưa có dữ liệu học sinh cho trường này');
+  setChartEmpty(avgCanvas, emptyMessage);
 }
 
 function showEmptyTeacher(questionCount, message, surveyType) {
