@@ -7,23 +7,31 @@ let activeSurvey = 'initial';
 
 const POST_SURVEY_QUESTIONS = {
   student: [
-    'Từ ngày dùng cách học này, em không còn thói quen cứ thấy bài khó là mở điện thoại chép AI ngay nữa, mà đã biết dừng lại để tự suy nghĩ thêm.',
-    'Cuốn Sổ tay tự vấn thực sự giúp em biết cách sắp xếp các bước giải để em tự tìm ra đáp án, trước khi đặt bút làm bài.',
-    'Tôi cảm thấy hứng thú và hào hứng khi tương tác với Chatbot AI Question Focus 24/7 bởi chỉ gợi mở chứ không đưa ra đáp án sẵn.',
-    'Việc kết hợp Sổ tay và Chatbot giúp em biết cách lật lại vấn đề và biết cách tự đặt câu hỏi (tư duy phản biện).',
-    'Bây giờ em đã hình thành được thói quen mở sách giáo khoa ra để đối chiếu lại kiến thức xem có chuẩn không.',
-    'Mô hình giúp tôi rèn luyện được thói quen và kỹ năng kiểm chứng thông tin từ sách giáo khoa.'
+    'Trong các giờ tự học buổi tối, em tự suy nghĩ và tìm hướng giải trước thay vì lập tức mở điện thoại chép đáp án từ AI.',
+    'Khi tương tác với AI, em ưu tiên dùng câu lệnh xin gợi ý từng bước (ví dụ: "Gợi ý cho em bước đầu tiên") thay vì xin đáp án.',
+    'Khi gặp bài khó, em kiên nhẫn dành thời gian suy nghĩ, tự vấn và xem lại sách vở trước khi tìm sự trợ giúp.',
+    'Trong giờ học và tự học, em chủ động đặt các câu hỏi "Vì sao?", "Tại sao?" để tự hiểu sâu bản chất vấn đề.',
+    'Khi giáo viên gọi lên bảng hoặc kiểm tra, em tự tin giải thích rõ ràng, mạch lạc cách làm bài tập của mình.',
+    'Sau khi tương tác với Chatbot/AI, em mở sách giáo khoa để đối chiếu, kiểm chứng lại kiến thức xem đã chuẩn chưa.'
   ],
   teacher: [
-    'Thầy/cô thấy mô hình này đã chỉ ra và giải quyết đúng thói quen lạm dụng công nghệ và chép bài chống đối của học sinh hiện nay.',
-    'Mô hình Sổ tay tự vấn kết hợp Chatbot AI Question Focus 24/7 hỗ trợ giáo viên rất nhiều trong việc đổi mới hiệu quả phương pháp dạy học.',
-    'Mô hình này rất gần gũi, dễ thực hiện và hoàn toàn có thể triển khai rộng rãi cho các lớp, các trường khác.',
-    'Nhờ việc rèn luyện cách tự đặt câu hỏi, học sinh trên lớp dạn dĩ hơn, tự tin đưa ra thắc mắc với giáo viên thay vì ngồi im thụ động.',
-    'Khi chấm bài hoặc gọi lên bảng, tôi thấy học sinh hiểu bản chất vấn đề sâu hơn, tự diễn đạt bằng lời của mình chứ không học vẹt.'
+    'Mô hình đã giúp giảm thiểu rõ rệt tình trạng học sinh lạm dụng công nghệ để copy - paste đáp án, chống đối bài tập.',
+    'Khi lên bảng hoặc chấm bài, tôi thấy học sinh hiểu bản chất vấn đề sâu hơn, tự diễn đạt được cách làm bằng lời của mình.',
+    'Học sinh trở nên tự tin chủ động đưa ra thắc mắc với giáo viên trên lớp thay vì ngồi im thụ động.',
+    'Học sinh đã hình thành được thói quen chủ động tra cứu sách giáo khoa, tự kiểm chứng thông tin thay vì chờ đáp án.',
+    'Mô hình Sổ tay tự vấn và Chatbot AI 24/7 thực sự hỗ trợ đắc lực cho giáo viên trong việc đổi mới, quản lý giờ tự học buổi tối.'
   ]
 };
 
-const POST_SURVEY_SCALE = [
+const POST_SURVEY_STUDENT_SCALE = [
+  'Rất hiếm khi',
+  'Hiếm khi',
+  'Thỉnh thoảng',
+  'Thường xuyên',
+  'Rất thường xuyên'
+];
+
+const POST_SURVEY_TEACHER_SCALE = [
   'Hoàn toàn không đồng ý',
   'Không đồng ý',
   'Phân vân',
@@ -137,11 +145,12 @@ function submitInfo(event) {
 function renderPostSurveyQuestions(role) {
   const prefix = role === 'student' ? 'ps' : 'pt';
   const container = document.getElementById(role === 'student' ? 'postStudentQuestions' : 'postTeacherQuestions');
+  const scale = role === 'student' ? POST_SURVEY_STUDENT_SCALE : POST_SURVEY_TEACHER_SCALE;
   container.innerHTML = POST_SURVEY_QUESTIONS[role].map(function (question, index) {
     return '<div class="question">' +
       '<p>Câu ' + (index + 1) + ': ' + escapeHtml(question) + '</p>' +
       '<div class="options">' +
-      POST_SURVEY_SCALE.map(function (label, valueIndex) {
+      scale.map(function (label, valueIndex) {
         return '<label class="option"><input type="radio" name="' + prefix + (index + 1) +
           '" value="' + (valueIndex + 1) + '"> ' + escapeHtml(label) + '</label>';
       }).join('') +
@@ -174,7 +183,7 @@ function setupOptionHighlight() {
 
 // ====== PROGRESS BAR ======
 function updateProgress() {
-  const sTotal = 6, tTotal = 12, postTeacherTotal = 5;
+  const sTotal = 6, tTotal = 12, postTeacherTotal = POST_SURVEY_QUESTIONS.teacher.length;
   let sDone = 0, tDone = 0;
   let psDone = 0, ptDone = 0;
 
