@@ -580,25 +580,17 @@ function loadDashboard() {
 
 function updateSurveyDashboardUI(surveyType) {
   const isPostSurvey = surveyType === 'post';
-  const legacySchoolOption = Array.from(document.getElementById('schoolFilter').options).find(function (option) {
-    return option.value === 'PTDTNT THCS&THPT Văn Quan';
-  });
-  if (legacySchoolOption) {
-    legacySchoolOption.textContent = isPostSurvey
-      ? 'PTDTNT THCS&THPT Văn Quan'
-      : 'PTDTNT THCS&THPT Văn Quan — dữ liệu cũ';
-  }
   document.getElementById('student-heading-1').textContent = isPostSurvey
-    ? 'Câu hỏi 1–3: Trải nghiệm học sinh sau khi áp dụng mô hình'
+    ? 'Phần 1: Tự suy nghĩ, xin gợi ý và kiên trì tự học (Câu 1–3)'
     : 'Phần 1: Biểu hiện sự ỷ lại (Câu 1–3)';
   document.getElementById('student-heading-2').textContent = isPostSurvey
-    ? 'Câu hỏi 4–6: Tư duy phản biện và kiểm chứng thông tin'
-    : 'Phần 2: Biểu hiện học tập chủ động (Câu 4–6)';
+    ? 'Phần 2: Chủ động đặt câu hỏi, diễn đạt và kiểm chứng (Câu 4–6)'
+    : 'Phần 2: Biểu hiện thụ động trong học tập (Câu 4–6)';
   document.getElementById('student-average-heading').textContent =
     'Điểm trung bình 6 câu hỏi (thang 1–5)';
 
   document.getElementById('teacher-heading-1').textContent = isPostSurvey
-    ? 'Đánh giá của giáo viên sau khi áp dụng mô hình (Câu 1–5)'
+    ? 'Đánh giá hiệu quả mô hình của giáo viên (Câu 1–5)'
     : 'Phần 1: Thực trạng hành vi học tập (Câu 1–4)';
   document.getElementById('teacher-heading-2').hidden = isPostSurvey;
   document.getElementById('teacher-heading-3').hidden = isPostSurvey;
@@ -645,9 +637,7 @@ function renderStudent(stats, surveyType) {
     'chart-student-part1',
     stats.questions.slice(0, firstSectionCount),
     0,
-    surveyType === 'post'
-      ? 'Phân bố câu trả lời của học sinh — Trải nghiệm (%)'
-      : 'Phân bố câu trả lời của học sinh — Phần 1 (%)',
+    'Phân bố câu trả lời của học sinh (%)',
     stats.total,
     'học sinh'
   );
@@ -655,9 +645,7 @@ function renderStudent(stats, surveyType) {
     'chart-student-part2',
     stats.questions.slice(firstSectionCount),
     firstSectionCount,
-    surveyType === 'post'
-      ? 'Phân bố câu trả lời của học sinh — Tư duy và kiểm chứng (%)'
-      : 'Phân bố câu trả lời của học sinh — Phần 2 (%)',
+    'Phân bố câu trả lời của học sinh (%)',
     stats.total,
     'học sinh'
   );
@@ -666,7 +654,8 @@ function renderStudent(stats, surveyType) {
     'chart-student-avg',
     stats.questions.map((q, i) => 'Câu ' + (i + 1)),
     stats.questions.map(q => Number(q.avg)),
-    'Điểm trung bình — Học sinh (1–5)'
+    'Điểm trung bình từng câu hỏi — Học sinh (thang 1–5)',
+    stats.questions.map(q => cleanLabel(q.label))
   );
 }
 
@@ -680,9 +669,7 @@ function renderTeacher(stats, surveyType) {
     'chart-teacher-part1',
     stats.questions.slice(0, firstSectionCount),
     0,
-    surveyType === 'post'
-      ? 'Đánh giá của giáo viên sau khi áp dụng mô hình (%)'
-      : 'Phân bố câu trả lời của giáo viên — Phần 1 (%)',
+    'Phân bố câu trả lời của giáo viên (%)',
     stats.total,
     'giáo viên'
   );
@@ -691,7 +678,7 @@ function renderTeacher(stats, surveyType) {
       'chart-teacher-part2',
       stats.questions.slice(4, 8),
       4,
-      'Phân bố câu trả lời của giáo viên — Phần 2 (%)',
+      'Phân bố câu trả lời của giáo viên (%)',
       stats.total,
       'giáo viên'
     );
@@ -710,7 +697,8 @@ function renderTeacher(stats, surveyType) {
     'chart-teacher-avg',
     stats.questions.map((q, i) => 'Câu ' + (i + 1)),
     stats.questions.map(q => Number(q.avg)),
-    'Điểm trung bình — Giáo viên (1–5)'
+    'Điểm trung bình từng câu hỏi — Giáo viên (thang 1–5)',
+    stats.questions.map(q => cleanLabel(q.label))
   );
 }
 
@@ -783,7 +771,9 @@ function createDistributionChart(canvasId, questions, questionOffset, title, res
       plugins: {
         title: {
           display: true,
-          text: title,
+          text: [title].concat(questions.map(function (question, index) {
+            return 'Câu ' + (questionOffset + index + 1) + ': ' + cleanLabel(question.label);
+          })),
           font: { size: 15, weight: '600' },
           color: '#2d3436',
           padding: { bottom: 12 }
@@ -922,7 +912,7 @@ function createDonutChart(canvasId, title, counts, avg) {
 }
 
 // ====== BAR CHART TRUNG BÌNH ======
-function createAvgBarChart(canvasId, labels, values, title) {
+function createAvgBarChart(canvasId, labels, values, title, questionLabels) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   canvas.parentElement.classList.remove('is-empty');
@@ -957,6 +947,10 @@ function createAvgBarChart(canvasId, labels, values, title) {
         legend: { display: false },
         tooltip: {
           callbacks: {
+            title: function (items) {
+              const index = items[0].dataIndex;
+              return 'Câu ' + (index + 1) + ': ' + (questionLabels[index] || labels[index]);
+            },
             label: function (ctx) {
               const v = ctx.parsed.y;
               let level = v >= 4 ? 'Cao' : (v >= 3 ? 'Trung bình' : 'Thấp');
